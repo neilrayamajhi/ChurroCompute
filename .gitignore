@@ -20,5 +20,8 @@ wheels/
 .vscode/
 
 # Churro data — regeneratable, kept out of git
-data/raw/
+data/
 outputs/
+
+# Claude Code local state (per-machine, not project config)
+.claude/

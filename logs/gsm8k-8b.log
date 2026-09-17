@@ -1,0 +1,228 @@
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Setting TOKENIZERS_PARALLELISM=false for forked processes.
+Processing 10 groups (40 total rollouts):   0%|          | 0/10 [00:00<?, ?it/s, reward=?]Processing 10 groups (40 total rollouts):  10%|█         | 1/10 [22:54<3:26:11, 1374.66s/it, reward=?]Processing 10 groups (40 total rollouts):  10%|█         | 1/10 [22:54<3:26:11, 1374.66s/it, reward=1]Processing 10 groups (40 total rollouts):  20%|██        | 2/10 [38:08<2:27:06, 1103.30s/it, reward=1]Processing 10 groups (40 total rollouts):  20%|██        | 2/10 [38:08<2:27:06, 1103.30s/it, reward=1]Processing 10 groups (40 total rollouts):  30%|███       | 3/10 [40:21<1:17:01, 660.24s/it, reward=1] Processing 10 groups (40 total rollouts):  30%|███       | 3/10 [40:21<1:17:01, 660.24s/it, reward=1]Processing 10 groups (40 total rollouts):  40%|████      | 4/10 [46:00<53:22, 533.72s/it, reward=1]  Processing 10 groups (40 total rollouts):  40%|████      | 4/10 [46:00<53:22, 533.72s/it, reward=1]Processing 10 groups (40 total rollouts):  50%|█████     | 5/10 [49:08<34:05, 409.10s/it, reward=1]Processing 10 groups (40 total rollouts):  50%|█████     | 5/10 [49:08<34:05, 409.10s/it, reward=1]Processing 10 groups (40 total rollouts):  60%|██████    | 6/10 [54:11<24:52, 373.05s/it, reward=1]Processing 10 groups (40 total rollouts):  60%|██████    | 6/10 [54:11<24:52, 373.05s/it, reward=1]Processing 10 groups (40 total rollouts):  70%|███████   | 7/10 [1:07:51<25:56, 518.92s/it, reward=1]Processing 10 groups (40 total rollouts):  70%|███████   | 7/10 [1:07:51<25:56, 518.92s/it, reward=1]Processing 10 groups (40 total rollouts):  80%|████████  | 8/10 [1:11:20<14:00, 420.42s/it, reward=1]Processing 10 groups (40 total rollouts):  80%|████████  | 8/10 [1:11:20<14:00, 420.42s/it, reward=1]Processing 10 groups (40 total rollouts):  90%|█████████ | 9/10 [1:13:23<05:27, 327.42s/it, reward=1]Processing 10 groups (40 total rollouts):  90%|█████████ | 9/10 [1:13:23<05:27, 327.42s/it, reward=1]Processing 10 groups (40 total rollouts): 100%|██████████| 10/10 [1:14:14<00:00, 242.06s/it, reward=1]Processing 10 groups (40 total rollouts): 100%|██████████| 10/10 [1:14:14<00:00, 242.06s/it, reward=1]Processing 10 groups (40 total rollouts): 100%|██████████| 10/10 [1:14:14<00:00, 445.46s/it, reward=1]
+--- Evaluation ---
+Environment: gsm8k
+Model: qwen3:8b
+Provider: http://localhost:11434/v1
+Examples: 10
+Rollouts per example: 4
+--- Example ---
+╭─────────────────────────────────── Step 0 ───────────────────────────────────╮
+│ ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━┓ │
+│ ┃ Prompt                         ┃ Completion                     ┃ Reward ┃ │
+│ ┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━┩ │
+│ │ system: Please reason step by  │ assistant:                     │   1.00 │ │
+│ │ step, and put your final       │ [reasoning]                    │        │ │
+│ │ answer within \boxed{}.        │ Okay, let's see. Janet’s ducks │        │ │
+│ │                                │ lay 16 eggs each day. So,      │        │ │
+│ │ user: Janet’s ducks lay 16     │ first, I need to figure out    │        │ │
+│ │ eggs per day. She eats three   │ how many eggs she has to sell  │        │ │
+│ │ for breakfast every morning    │ at the farmers' market. But    │        │ │
+│ │ and bakes muffins for her      │ she uses some eggs for her own │        │ │
+│ │ friends every day with four.   │ breakfast and for baking       │        │ │
+│ │ She sells the remainder at the │ muffins.                       │        │ │
+│ │ farmers' market daily for $2   │                                │        │ │
+│ │ per fresh duck egg. How much   │ Alright, she eats three eggs   │        │ │
+│ │ in dollars does she make every │ for breakfast every morning.   │        │ │
+│ │ day at the farmers' market?    │ And she bakes muffins for her  │        │ │
+│ │                                │ friends every day with four    │        │ │
+│ │                                │ eggs. Wait, so does that mean  │        │ │
+│ │                                │ she uses four eggs for muffins │        │ │
+│ │                                │ each day? Let me make sure.    │        │ │
+│ │                                │ The problem says she bakes     │        │ │
+│ │                                │ muffins for her friends every  │        │ │
+│ │                                │ day with four. Hmm, maybe it's │        │ │
+│ │                                │ four eggs per muffin? Or four  │        │ │
+│ │                                │ muffins? Wait, the wording is  │        │ │
+│ │                                │ a bit unclear. Let me check    │        │ │
+│ │                                │ again.                         │        │ │
+│ │                                │                                │        │ │
+│ │                                │ It says: "She eats three for   │        │ │
+│ │                                │ breakfast every morning and    │        │ │
+│ │                                │ bakes muffins for her friends  │        │ │
+│ │                                │ every day with four." So maybe │        │ │
+│ │                                │ "with four" refers to four     │        │ │
+│ │                                │ eggs? Like, she uses four eggs │        │ │
+│ │                                │ to bake muffins each day? So   │        │ │
+│ │                                │ total eggs used per day would  │        │ │
+│ │                                │ be three for breakfast plus    │        │ │
+│ │                                │ four for muffins? That seems   │        │ │
+│ │                                │ likely. So 3 + 4 = 7 eggs used │        │ │
+│ │                                │ each day.                      │        │ │
+│ │                                │                                │        │ │
+│ │                                │ So total eggs laid per day is  │        │ │
+│ │                                │ 16. Then, subtract the ones    │        │ │
+│ │                                │ she uses. So 16 - 7 = 9 eggs   │        │ │
+│ │                                │ left to sell. Then, she sells  │        │ │
+│ │                                │ the remainder at $2 per egg.   │        │ │
+│ │                                │ So 9 eggs times $2 is... let   │        │ │
+│ │                                │ me calculate that. 9 * 2 =     │        │ │
+│ │                                │ $18. So she makes $18 every    │        │ │
+│ │                                │ day at the farmers' market.    │        │ │
+│ │                                │                                │        │ │
+│ │                                │ Wait, let me double-check.     │        │ │
+│ │                                │ Maybe I misread the number of  │        │ │
+│ │                                │ eggs used for muffins. If she  │        │ │
+│ │                                │ bakes muffins "with four,"     │        │ │
+│ │                                │ maybe it's four muffins, each  │        │ │
+│ │                                │ requiring some eggs? But the   │        │ │
+│ │                                │ problem doesn't specify how    │        │ │
+│ │                                │ many eggs per muffin. Since    │        │ │
+│ │                                │ the problem mentions eggs laid │        │ │
+│ │                                │ by ducks, and the other        │        │ │
+│ │                                │ numbers are in eggs (three for │        │ │
+│ │                                │ breakfast), it's more          │        │ │
+│ │                                │ consistent that "bakes         │        │ │
+│ │                                │ muffins... with four" refers   │        │ │
+│ │                                │ to four eggs. Otherwise, if it │        │ │
+│ │                                │ was four muffins, we would     │        │ │
+│ │                                │ need to know how many eggs per │        │ │
+│ │                                │ muffin. Since that information │        │ │
+│ │                                │ isn't given, it's safer to     │        │ │
+│ │                                │ assume that "four" is the      │        │ │
+│ │                                │ number of eggs used for        │        │ │
+│ │                                │ muffins.                       │        │ │
+│ │                                │                                │        │ │
+│ │                                │ Therefore, total eggs used: 3  │        │ │
+│ │                                │ + 4 = 7. Eggs sold: 16 - 7 =   │        │ │
+│ │                                │ 9. Revenue: 9 * 2 = 18. So the │        │ │
+│ │                                │ answer should be $18 per day.  │        │ │
+│ │                                │                                │        │ │
+│ │                                │ But let me check once more.    │        │ │
+│ │                                │ Suppose that "bakes muffins    │        │ │
+│ │                                │ for her friends every day with │        │ │
+│ │                                │ four" means that she uses four │        │ │
+│ │                                │ eggs per muffin, and maybe she │        │ │
+│ │                                │ makes, say, four muffins? But  │        │ │
+│ │                                │ that's speculative. The        │        │ │
+│ │                                │ problem doesn't specify. Since │        │ │
+│ │                                │ the problem is probably        │        │ │
+│ │                                │ designed for a math problem,   │        │ │
+│ │                                │ the numbers are likely         │        │ │
+│ │                                │ intended to be                 │        │ │
+│ │                                │ straightforward. So "three for │        │ │
+│ │                                │ breakfast" and "four for       │        │ │
+│ │                                │ muffins" would be 3 + 4 = 7.   │        │ │
+│ │                                │ Therefore, 16 - 7 = 9 eggs     │        │ │
+│ │                                │ sold. 9 * 2 = 18.              │        │ │
+│ │                                │                                │        │ │
+│ │                                │ Yes, I think that's right. So  │        │ │
+│ │                                │ the answer is $18.             │        │ │
+│ │                                │                                │        │ │
+│ │                                │ **Final Answer**               │        │ │
+│ │                                │ Janet makes \boxed{18} dollars │        │ │
+│ │                                │ every day at the farmers'      │        │ │
+│ │                                │ market.                        │        │ │
+│ │                                │                                │        │ │
+│ │                                │                                │        │ │
+│ │                                │ To determine how much Janet    │        │ │
+│ │                                │ makes at the farmers' market   │        │ │
+│ │                                │ each day, we follow a logical  │        │ │
+│ │                                │ breakdown of the egg usage and │        │ │
+│ │                                │ the revenue from selling the   │        │ │
+│ │                                │ remainder.                     │        │ │
+│ │                                │                                │        │ │
+│ │                                │ ---                            │        │ │
+│ │                                │                                │        │ │
+│ │                                │ ### Step 1: Total Eggs Laid    │        │ │
+│ │                                │ Each Day                       │        │ │
+│ │                                │                                │        │ │
+│ │                                │ Janet’s ducks lay **16 eggs    │        │ │
+│ │                                │ per day**.                     │        │ │
+│ │                                │                                │        │ │
+│ │                                │ ---                            │        │ │
+│ │                                │                                │        │ │
+│ │                                │ ### Step 2: Eggs Used for      │        │ │
+│ │                                │ Personal Consumption           │        │ │
+│ │                                │                                │        │ │
+│ │                                │ - **Breakfast:** She eats **3  │        │ │
+│ │                                │ eggs** every morning.          │        │ │
+│ │                                │ - **Muffins:** She bakes       │        │ │
+│ │                                │ muffins for her friends using  │        │ │
+│ │                                │ **4 eggs** per day.            │        │ │
+│ │                                │                                │        │ │
+│ │                                │ So, the total eggs used for    │        │ │
+│ │                                │ personal purposes is:          │        │ │
+│ │                                │                                │        │ │
+│ │                                │ $$                             │        │ │
+│ │                                │ 3 + 4 = 7 \text{ eggs}         │        │ │
+│ │                                │ $$                             │        │ │
+│ │                                │                                │        │ │
+│ │                                │ ---                            │        │ │
+│ │                                │                                │        │ │
+│ │                                │ ### Step 3: Eggs Available for │        │ │
+│ │                                │ Sale                           │        │ │
+│ │                                │                                │        │ │
+│ │                                │ Subtract the eggs used from    │        │ │
+│ │                                │ the total laid:                │        │ │
+│ │                                │                                │        │ │
+│ │                                │ $$                             │        │ │
+│ │                                │ 16 - 7 = 9 \text{ eggs}        │        │ │
+│ │                                │ $$                             │        │ │
+│ │                                │                                │        │ │
+│ │                                │ These 9 eggs are the ones      │        │ │
+│ │                                │ Janet sells at the farmers'    │        │ │
+│ │                                │ market.                        │        │ │
+│ │                                │                                │        │ │
+│ │                                │ ---                            │        │ │
+│ │                                │                                │        │ │
+│ │                                │ ### Step 4: Revenue from Egg   │        │ │
+│ │                                │ Sales                          │        │ │
+│ │                                │                                │        │ │
+│ │                                │ Each egg is sold for **$2**.   │        │ │
+│ │                                │ Therefore, the daily income    │        │ │
+│ │                                │ from selling the eggs is:      │        │ │
+│ │                                │                                │        │ │
+│ │                                │ $$                             │        │ │
+│ │                                │ 9 \times 2 = 18 \text{         │        │ │
+│ │                                │ dollars}                       │        │ │
+│ │                                │ $$                             │        │ │
+│ │                                │                                │        │ │
+│ │                                │ ---                            │        │ │
+│ │                                │                                │        │ │
+│ │                                │ ### Final Answer               │        │ │
+│ │                                │                                │        │ │
+│ │                                │ $$                             │        │ │
+│ │                                │ \boxed{18}                     │        │ │
+│ │                                │ $$                             │        │ │
+│ └────────────────────────────────┴────────────────────────────────┴────────┘ │
+╰──────────────────────────────────────────────────────────────────────────────╯
+--- All ---
+Rewards:
+reward: avg - 1.000, std - 0.000
+r1: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+r2: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+r3: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+r4: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+pass@k: 1=1.000, 2=1.000, 4=1.000
+pass^k: 1=1.000, 2=1.000, 4=1.000
+correct_answer: avg - 1.000, std - 0.000
+r1: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+r2: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+r3: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+r4: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+num_turns: avg - 1.000, std - 0.000
+r1: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+r2: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+r3: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+r4: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+Info:
+is_truncated: avg - 0.000, std - 0.000
+stop_conditions: max_turns_reached: 1.000
+Timing:
+  total      min - 22m 54s, mean - 47m 39s, max - 1h 14m
+  setup      min - 0ms, mean - 0ms, max - 0ms
+  generation min - 1m 33s, mean - 30m 19s, max - 1h 14m
+  model      min - 1m 33s, mean - 30m 19s, max - 1h 14m
+  env        min - 0ms, mean - 0ms, max - 0ms
+  scoring    min - 28ms, mean - 318ms, max - 2s
+  overhead   min - 2ms, mean - 17m 19s, max - 1h 12m
+Usage:
+input_tokens (avg): 92.600
+output_tokens (avg): 1895.400
+final_input_tokens (avg): 92.600
+final_output_tokens (avg): 1895.400
+
+Performance:
+event_loop_lag: mean=1ms, p99=2ms, max=2s (n=44032)
