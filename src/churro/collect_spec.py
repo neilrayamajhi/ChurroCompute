@@ -5,8 +5,19 @@ from pathlib import Path
 
 import pytest
 
-from churro.collect import CollectError, collect_run
-from churro.schema import CHURRO_VERSION
+from churro.collect import (
+    CollectError,
+    collect_run,
+    merge_rollouts,
+)
+from churro.schema import (
+    CHURRO_VERSION,
+    EnvId,
+    ModelId,
+    Rollout,
+    TaskId,
+    make_group_id,
+)
 
 
 def _write_run(
@@ -116,3 +127,49 @@ class TestCollectRun:
         rollouts = collect_run(run_dir)
         parsed = datetime.fromisoformat(rollouts[0].collected_at)
         assert parsed.tzinfo is not None
+
+
+def _stored(*, task: str, idx: int, reward: float, model: str = "qwen3:1.7b") -> Rollout:
+    env = EnvId("regex-craft")
+    task_id = TaskId(task)
+    model_id = ModelId(model)
+    return Rollout(
+        env_id=env,
+        task_id=task_id,
+        group_id=make_group_id(env, task_id, model_id),
+        rollout_idx=idx,
+        model=model_id,
+        reward=reward,
+        num_turns=1,
+        completion_tokens=100,
+        collected_at="2026-09-25T00:00:00+00:00",
+        churro_version=CHURRO_VERSION,
+    )
+
+
+class TestMergeRollouts:
+    def test_appends_new_rollouts_after_existing_ones(self) -> None:
+        existing = [_stored(task="0", idx=0, reward=1.0)]
+        new = [_stored(task="1", idx=0, reward=0.0)]
+
+        assert merge_rollouts(existing, new) == existing + new
+
+    def test_keeps_existing_copy_when_new_one_has_same_identity(self) -> None:
+        existing = [_stored(task="0", idx=0, reward=1.0)]
+        rerun = [_stored(task="0", idx=0, reward=0.0)]
+
+        assert merge_rollouts(existing, rerun) == existing
+
+    def test_same_task_and_index_on_different_models_are_distinct(self) -> None:
+        small = _stored(task="0", idx=0, reward=1.0, model="qwen3:0.6b")
+        large = _stored(task="0", idx=0, reward=1.0, model="qwen3:14b")
+
+        assert merge_rollouts([small], [large]) == [small, large]
+
+    def test_merging_twice_is_the_same_as_merging_once(self) -> None:
+        existing = [_stored(task="0", idx=0, reward=1.0)]
+        new = [_stored(task="0", idx=1, reward=0.0)]
+        once = merge_rollouts(existing, new)
+
+        assert merge_rollouts(once, new) == once
+

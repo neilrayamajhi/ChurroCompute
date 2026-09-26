@@ -3,7 +3,12 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from churro.collect import collect_run, load_rollouts, write_rollouts
+from churro.collect import (
+    collect_run,
+    load_rollouts,
+    merge_rollouts,
+    write_rollouts,
+)
 
 
 def main() -> None:
@@ -24,16 +29,7 @@ def main() -> None:
     out_path = args.out_root / f"{env_id}.jsonl"
 
     existing = load_rollouts(out_path) if out_path.is_file() else []
-    seen: set[tuple[str, str, int]] = set()
-    merged = []
-    for r in existing + new_rollouts:
-        key = (r.group_id, r.model, r.rollout_idx)
-        if key in seen:
-            continue
-        seen.add(key)
-        merged.append(r)
-
-    n = write_rollouts(merged, out_path)
+    n = write_rollouts(merge_rollouts(existing, new_rollouts), out_path)
     added = n - len(existing)
     print(f"wrote {n} rollouts to {out_path} (+{added} new, {len(new_rollouts) - added} deduped)")
 

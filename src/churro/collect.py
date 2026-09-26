@@ -47,6 +47,20 @@ def write_rollouts(rollouts: Iterable[Rollout], out_path: Path) -> int:
     return n
 
 
+def merge_rollouts(
+    existing: Iterable[Rollout], new: Iterable[Rollout]
+) -> list[Rollout]:
+    seen: set[tuple[str, str, int]] = set()
+    merged: list[Rollout] = []
+    for r in [*existing, *new]:
+        key = (r.group_id, r.model, r.rollout_idx)
+        if key in seen:
+            continue
+        seen.add(key)
+        merged.append(r)
+    return merged
+
+
 def load_rollouts(path: Path) -> list[Rollout]:
     if not path.is_file():
         raise CollectError(f"missing normalized file: {path}")
