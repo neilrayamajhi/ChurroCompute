@@ -78,6 +78,7 @@ def main() -> None:
     )
 
     pod_id = _resume_pod_id()
+    _keep_pc_awake(True)
     try:
         if pod_id:
             print(f"Reconnecting to pod {pod_id} from a previous run.")
@@ -102,6 +103,22 @@ def main() -> None:
             _delete_pod(pod_id)
             _collect_and_report(RESULTS_ROOT / pod_id)
         _warn_about_running_pods()
+        _keep_pc_awake(False)
+
+
+def _keep_pc_awake(on: bool) -> None:
+    # Snapshots only download while this PC is awake; if it sleeps, the pod can
+    # self-destruct with results that never came home. Closing a laptop lid
+    # still forces sleep.
+    if sys.platform != "win32":
+        return
+    import ctypes
+
+    es_continuous, es_system_required = 0x80000000, 0x00000001
+    flags = es_continuous | (es_system_required if on else 0)
+    ctypes.windll.kernel32.SetThreadExecutionState(flags)
+    if on:
+        print("Keeping this PC awake until the run ends (keep the laptop lid open).")
 
 
 def _runpodctl(*args: str) -> object:
