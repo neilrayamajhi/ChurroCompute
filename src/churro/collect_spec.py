@@ -8,6 +8,7 @@ import pytest
 from churro.collect import (
     CollectError,
     collect_run,
+    count_timed_out,
     merge_rollouts,
 )
 from churro.schema import (
@@ -173,3 +174,56 @@ class TestMergeRollouts:
 
         assert merge_rollouts(once, new) == once
 
+
+def _timed_out_rollout(*, example_id: int) -> dict[str, object]:
+    return {
+        "example_id": example_id,
+        "reward": 0.0,
+        "metrics": {"num_turns": 1.0},
+        "num_turns": 1,
+        "completion": [],
+        "stop_condition": "timeout_reached",
+    }
+
+
+class TestTimedOutRollouts:
+    def test_collect_run_skips_rollouts_cut_off_by_timeout(
+        self, tmp_path: Path
+    ) -> None:
+        run_dir = _write_run(
+            tmp_path,
+            rollouts=[
+                _fake_rollout(example_id=0, reward=1.0),
+                _timed_out_rollout(example_id=0),
+                _fake_rollout(example_id=0, reward=0.0),
+            ],
+        )
+
+        rollouts = collect_run(run_dir)
+
+        assert [(r.task_id, r.rollout_idx, r.reward) for r in rollouts] == [
+            ("0", 0, 1.0),
+            ("0", 1, 0.0),
+        ]
+
+    def test_count_timed_out_counts_only_timeout_rows(self, tmp_path: Path) -> None:
+        timed_out = 2
+        run_dir = _write_run(
+            tmp_path,
+            rollouts=[
+                _fake_rollout(example_id=0, reward=1.0),
+                *[_timed_out_rollout(example_id=1) for _ in range(timed_out)],
+            ],
+        )
+
+        assert count_timed_out(run_dir) == timed_out
+
+    def test_row_missing_token_usage_without_timeout_still_fails_loudly(
+        self, tmp_path: Path
+    ) -> None:
+        broken = _fake_rollout(example_id=0, reward=1.0)
+        del broken["token_usage"]
+        run_dir = _write_run(tmp_path, rollouts=[broken])
+
+        with pytest.raises(KeyError):
+            collect_run(run_dir)

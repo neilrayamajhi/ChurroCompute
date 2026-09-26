@@ -47,6 +47,10 @@ def write_rollouts(rollouts: Iterable[Rollout], out_path: Path) -> int:
     return n
 
 
+def count_timed_out(run_dir: Path) -> int:
+    return sum(1 for row in _read_rows(run_dir / "results.jsonl") if _timed_out(row))
+
+
 def merge_rollouts(
     existing: Iterable[Rollout], new: Iterable[Rollout]
 ) -> list[Rollout]:
@@ -95,24 +99,34 @@ def _iter_rollouts(
     collected_at: str,
 ) -> Iterable[Rollout]:
     seen: Counter[TaskId] = Counter()
+    for row in _read_rows(results_path):
+        # A rollout cut off by vf-eval's timeout never answered, so it is not
+        # evidence the model failed; scoring it 0 would inflate dead_too_hard.
+        if _timed_out(row):
+            continue
+        task_id = TaskId(str(row["example_id"]))
+        rollout_idx = seen[task_id]
+        seen[task_id] += 1
+        yield Rollout(
+            env_id=env_id,
+            task_id=task_id,
+            group_id=make_group_id(env_id, task_id, model),
+            rollout_idx=rollout_idx,
+            model=model,
+            reward=float(row["reward"]),
+            num_turns=int(row.get("num_turns", row["metrics"]["num_turns"])),
+            completion_tokens=int(row["token_usage"]["output_tokens"]),
+            collected_at=collected_at,
+            churro_version=CHURRO_VERSION,
+        )
+
+
+def _read_rows(results_path: Path) -> Iterable[dict[str, object]]:
     with results_path.open() as f:
         for line in f:
-            line = line.strip()
-            if not line:
-                continue
-            row = json.loads(line)
-            task_id = TaskId(str(row["example_id"]))
-            rollout_idx = seen[task_id]
-            seen[task_id] += 1
-            yield Rollout(
-                env_id=env_id,
-                task_id=task_id,
-                group_id=make_group_id(env_id, task_id, model),
-                rollout_idx=rollout_idx,
-                model=model,
-                reward=float(row["reward"]),
-                num_turns=int(row.get("num_turns", row["metrics"]["num_turns"])),
-                completion_tokens=int(row["token_usage"]["output_tokens"]),
-                collected_at=collected_at,
-                churro_version=CHURRO_VERSION,
-            )
+            if line.strip():
+                yield json.loads(line)
+
+
+def _timed_out(row: dict[str, object]) -> bool:
+    return row.get("stop_condition") == "timeout_reached"
