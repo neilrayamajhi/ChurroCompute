@@ -11,7 +11,7 @@ Format for each entry:
 
 ---
 
-## 2026-09-25 — regex-craft difficulty curve on a rented GPU (grader looks broken)
+## 2026-09-25 — regex-craft difficulty curve on a rented GPU (grader is broken)
 
 **What we ran**
 The full `qwen3-v1` ladder on `liuliu/regex-craft` (0.1.0), on a rented RunPod A40 (48GB, $0.49/hr) instead of the M4:
@@ -45,6 +45,22 @@ The difficulty curve is flat: every rung averages 0.47–0.50 reward and never e
 
 The answers are not wrong. Example: 14b answered `^[a-z]+[0-9]{3}$` for a task whose reference is `[a-z]+\d{3}` — equivalent regexes — and still received `match_accuracy = 0`. This is the Grader Narrowness failure mode (PRD Part 12) showing up before we built that metric: `dead_too_hard` here means "the grader withholds credit", not "the model can't do it".
 
+**Root cause (confirmed in the env source, `regex_craft` 0.1.0).** All three reward functions read the task's details from `kwargs["info"]` (`task_type`, `test_strings`, `expected_matches`). But `_build_dataset()` stores those as top-level dataset columns and never builds an `info` column, so verifiers passes `info = {}`. Consequences:
+- every task is treated as `task_type="generate"`, including the `match` and `explain` tasks;
+- with no test strings, `regex_correctness` falls through to "valid regex → 0.5, invalid → 0.1" and **never tests the regex**;
+- `match_accuracy` and `explanation_quality` only score `match`/`explain` tasks, so they always return 0.
+
+Observed rewards match exactly: `regex_correctness` took only the values 0.5 (283×) and 0.1 (9×) across all 292 rollouts. Reproduced locally with the env's own reward function on the task whose reference is `[a-z]+\d{3}`:
+
+| Submitted regex | Score as shipped | Score with `info` populated |
+|---|---|---|
+| `[a-z]+\d{3}` (the reference) | 0.5 | 1.0 |
+| `^[a-z]+[0-9]{3}$` (equivalent) | 0.5 | — |
+| `hello` (wrong) | 0.5 | 0.33 |
+| `zzz+` (nonsense) | 0.5 | — |
+
+A correct answer and a wrong one score the same, so training on regex-craft as published produces no learning signal about regexes at all. Fix for the env author: put `task_type`, `test_strings` and `expected_matches` (JSON-decoded) inside an `info` dict per row.
+
 This probably also explains the earlier regex-craft entry (2026-08-30, 1.7b, 38% signal, 10/16 dead_too_hard): its `mean_spread = 0.15` from rewards clustering around 0.5 fits the same capped reward. That number should not be read as difficulty.
 
 **What the metrics missed**
@@ -54,7 +70,6 @@ This probably also explains the earlier regex-craft entry (2026-08-30, 1.7b, 38%
 **Caveats**
 - 4b and 14b are partial (9 and 10 tasks). 4b writes very long answers (mean ≈ 4.2k output tokens, max ≈ 10k) and hit the 45-min per-model limit; 14b was stopped by the 2.5h budget. A full ladder needs ~4h on this GPU.
 - Settings differ from the M4 runs: `--max-tokens 16384` and a 20k context were added because qwen3:4b otherwise generated until the 10-min per-rollout timeout on every attempt. Group size is 4 throughout.
-- Only one sample answer was hand-checked for equivalence. Before filing an issue on the environment, check a handful more and read the grader's source for how `match_accuracy` is computed.
 - Different hardware (A40 vs M4) and Ollama build; same `qwen3` tags and quantization.
 
 **Ops notes (RunPod)**
