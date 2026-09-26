@@ -36,7 +36,7 @@ GPU_PREFERENCES: list[tuple[str, Cloud]] = [
     ("NVIDIA GeForce RTX 4090", "SECURE"),
 ]
 POD_IMAGE = "runpod/pytorch:1.0.3-cu1281-torch291-ubuntu2404"
-BUDGET_LIMIT_USD = 2.0
+BUDGET_LIMIT_USD = 3.0
 POLL_SECONDS = 60
 SSH_KEY = Path.home() / ".ssh" / "id_ed25519"
 RESULTS_ROOT = Path("outputs/runpod")
