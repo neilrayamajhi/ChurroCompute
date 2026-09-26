@@ -11,6 +11,54 @@ Format for each entry:
 
 ---
 
+## 2026-09-26 — iso8601-recurrence difficulty curve (grader scores every answer 0 under verifiers 0.3.0)
+
+**What we ran**
+The `qwen3-v1` ladder on `joeljose/iso8601-recurrence` (0.1.1) on a rented RunPod A40, same settings as the regex-craft run (`-n 30 -r 4 --max-tokens 16384 --timeout 600`, 4h pod budget):
+```
+uv run python tools/runpod_ladder.py joeljose/iso8601-recurrence --max-hours 4
+```
+0.6b and 1.7b completed (120 rollouts each); 4b hit its 45-min limit with 44 rollouts (11 tasks); 8b and 14b ran but were lost (see Caveats). Cost ≈ $2.01.
+
+**What the run reported: 0 reward on every rollout.** `pass=0`, `signal=0`, 100% `dead_too_hard` at every rung — the same "complete capability wall" as the 2026-08-30 entry. `possibly_broken=True` fired, correctly.
+
+**Root cause: the grader never sees the answer.** The env's `_completion_text()` only reads a message if `isinstance(last, dict)`. verifiers 0.3.0 passes reward functions `AssistantMessage` pydantic objects, which aren't dicts, so the text comes back `""` and both `exact_match` and `parses_as_contract` return 0 for everything. Reproduced locally with the env's own functions and the reference answer:
+
+| Call | Result |
+|---|---|
+| `exact_match([AssistantMessage(content=reference)], reference)` | **0.0** |
+| `exact_match([{"role": "assistant", "content": reference}], reference)` | 1.0 |
+
+Evidence it fired in the real run: `parses_as_contract` was 0 on all 284 rollouts, including ones that are well-formed JSON, and at least one 1.7b rollout is character-for-character equal to the reference and still scored 0.
+
+**Re-scored from the cached rollouts (no inference re-run).** `results.jsonl` stores messages as dicts, so `tools/regrade_iso8601.py` applies the env's own `grade()` to the saved text:
+
+| Model | n_tasks | pass_rate | signal_rate | dead_too_easy | dead_too_hard |
+|---|---|---|---|---|---|
+| qwen3:0.6b | 30 | 0.07 | 0.23 ± 0.15 | 0 | 23 |
+| qwen3:1.7b | 30 | 0.25 | **0.43 ± 0.18** | 2 | 15 |
+| qwen3:4b | 11 | 0.91 | 0.27 ± 0.26 | 8 | 0 |
+| qwen3:8b | — | — | — | — | — |
+| qwen3:14b | — | — | — | — | — |
+
+Summary flags after re-scoring: `floor=qwen3:0.6b`, `ceiling=qwen3:4b`, `best_signal_model=qwen3:1.7b`, `slope=0.42 pass_rate/rung`, `possibly_broken=False`.
+
+**What it means — a real, textbook difficulty curve.** Pass rate climbs 7% → 25% → 91% across three rungs and signal peaks in the middle (1.7b at 43%), exactly the "peak at some middle model, collapse at both ends" shape the Phase 4 plan predicted. iso8601-recurrence is a *good* training env for ~1.7b-class models; it only looked dead because of the grader.
+
+**This overturns the 2026-08-30 entry** ("iso8601-recurrence × qwen3:1.7b, total capability wall, 30/30 dead_too_hard"). That run used the same verifiers 0.3.0 and the same env, so its 0.0 across 120 rollouts is almost certainly this bug, not the model; the same completions re-scored would likely land near our 25% pass / 43% signal. The "capability wall vs. broken grader" question it left open is answered: broken grader. The Phase 3 cross-env table's "complete capability wall" row should be treated as void.
+
+**Meta-finding.** Two of the two non-gsm8k envs we've looked at closely (regex-craft, iso8601-recurrence) have graders that don't grade under verifiers 0.3.0, for two different reasons (missing `info` column; dict-only message check). Both produced plausible-looking Signal Rate numbers. Before trusting any env's numbers, feed its reward functions a known-correct and a known-wrong answer in the exact shape verifiers passes them — a cheap check worth building into Churro itself.
+
+**Caveats**
+- **8b and 14b were lost.** The PC doing the polling went to sleep around 02:00, so no snapshots were downloaded after 8b started; the pod then hit its 4h self-destruct and took the results with it. Snapshots depend on the PC being awake (see ops note).
+- 4b is 11 tasks only; its ±0.26 CI is wide.
+- The re-score assumes `grade()` itself is correct. Spot-checked: reference → 1.0, a wrong occurrence list → 0.0, empty → 0.0.
+- Same settings caveats as the regex-craft entry (`--max-tokens 16384`, 20k context, A40, group size 4).
+
+**Ops note.** Result safety currently depends on the local machine staying awake to pull snapshots. Options: keep the PC awake during runs, have the pod upload results itself before any self-destruct, or stop (not terminate) the pod at the deadline so the disk survives.
+
+---
+
 ## 2026-09-25 — regex-craft difficulty curve on a rented GPU (grader is broken)
 
 **What we ran**
