@@ -15,6 +15,7 @@ from pathlib import Path
 from churro.config import LADDER
 from churro.pod_ladder import (
     POD_WORKDIR,
+    PRIME_HUB_INDEX,
     Cloud,
     GpuOffer,
     LadderPlan,
@@ -59,6 +60,11 @@ def main() -> None:
     parser.add_argument("--max-hours", type=float, default=2.5)
     parser.add_argument("--max-price-per-hr", type=float, default=0.80)
     parser.add_argument("--yes", action="store_true", help="skip the cost confirmation")
+    parser.add_argument(
+        "--skip-grader-check",
+        action="store_true",
+        help="rent a GPU even if the env's grader fails the pre-flight check",
+    )
     args = parser.parse_args()
 
     if not os.environ.get("RUNPOD_API_KEY"):
@@ -83,6 +89,8 @@ def main() -> None:
         if pod_id:
             print(f"Reconnecting to pod {pod_id} from a previous run.")
         else:
+            if not args.skip_grader_check:
+                _require_working_grader(plan.env_slug)
             _ensure_ssh_key()
             offers = rank_gpu_offers(_runpodctl("gpu", "list"), GPU_PREFERENCES, args.max_price_per_hr)
             if not offers:
@@ -119,6 +127,26 @@ def _keep_pc_awake(on: bool) -> None:
     ctypes.windll.kernel32.SetThreadExecutionState(flags)
     if on:
         print("Keeping this PC awake until the run ends (keep the laptop lid open).")
+
+
+def _require_working_grader(env_slug: str) -> None:
+    env_name = env_slug.rsplit("/", 1)[-1]
+    print(f"Checking {env_name}'s grader before renting anything...")
+    done = subprocess.run(
+        [
+            "uv", "run", "--with", env_name,
+            "--extra-index-url", PRIME_HUB_INDEX.format(slug=env_slug),
+            "python", "tools/check_grader.py", env_name,
+        ],
+        capture_output=True, text=True, env={**os.environ, "PYTHONUTF8": "1"},
+    )
+    verdict = [ln for ln in done.stdout.splitlines() if ln.startswith("grader check")]
+    print(f"  {verdict[-1] if verdict else done.stderr.strip()[-300:]}")
+    if done.returncode != 0:
+        sys.exit(
+            "Not renting a GPU: this env's grader would make every number meaningless.\n"
+            "Use --skip-grader-check to run it anyway (e.g. to collect rollouts for re-scoring)."
+        )
 
 
 def _runpodctl(*args: str) -> object:
