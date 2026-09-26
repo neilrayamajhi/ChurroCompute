@@ -11,6 +11,59 @@ Format for each entry:
 
 ---
 
+## 2026-09-25 — regex-craft difficulty curve on a rented GPU (grader looks broken)
+
+**What we ran**
+The full `qwen3-v1` ladder on `liuliu/regex-craft` (0.1.0), on a rented RunPod A40 (48GB, $0.49/hr) instead of the M4:
+```
+uv run python tools/runpod_ladder.py liuliu/regex-craft
+# per model: vf-eval regex-craft -n 30 -r 4 --max-tokens 16384 --timeout 600
+# Ollama: OLLAMA_NUM_PARALLEL=4, OLLAMA_CONTEXT_LENGTH=20480
+uv run python tools/report_difficulty.py data/raw/regex-craft.jsonl
+```
+regex-craft only has 18 tasks, so `-n 30` yields 18. Wall-clock: setup 2 min, 0.6b 9 min, 1.7b 16 min, 4b 45 min (hit the per-model limit), 8b 42 min, 14b cut off by the pod's 2.5h self-destruct. Cost ≈ $1.26 for the run.
+
+**What we measured**
+| Model | n_tasks | rollouts | pass_rate | signal_rate | dead_too_easy | dead_too_hard |
+|---|---|---|---|---|---|---|
+| qwen3:0.6b | 18 | 72 | 0.00 | 0.17 ± 0.17 | 0 | 15 |
+| qwen3:1.7b | 18 | 72 | 0.00 | 0.11 ± 0.15 | 0 | 16 |
+| qwen3:4b | 9 | 36 (+4 timed out, skipped) | 0.00 | 0.00 | 0 | 9 |
+| qwen3:8b | 18 | 72 | 0.00 | 0.06 ± 0.11 | 0 | 17 |
+| qwen3:14b | 10 | 40 | 0.00 | 0.10 ± 0.19 | 0 | 9 |
+
+Reward components across **every** rollout of **every** model:
+| Component | min | mean | max |
+|---|---|---|---|
+| `regex_correctness` | 0.1 | ≈ 0.49 | 0.5 |
+| `match_accuracy` | 0.0 | 0.0 | 0.0 |
+| `explanation_quality` | 0.0 | 0.0 | 0.0 |
+
+**What it means — the grader, not the models, sets the score.**
+
+The difficulty curve is flat: every rung averages 0.47–0.50 reward and never exceeds 0.5, so nothing ever "passes". A ~23× jump in parameters (0.6b → 14b) with zero change in score is not a difficulty signal. Two of the three reward components are 0 for all 292 rollouts, so the reward is effectively `regex_correctness` capped at 0.5.
+
+The answers are not wrong. Example: 14b answered `^[a-z]+[0-9]{3}$` for a task whose reference is `[a-z]+\d{3}` — equivalent regexes — and still received `match_accuracy = 0`. This is the Grader Narrowness failure mode (PRD Part 12) showing up before we built that metric: `dead_too_hard` here means "the grader withholds credit", not "the model can't do it".
+
+This probably also explains the earlier regex-craft entry (2026-08-30, 1.7b, 38% signal, 10/16 dead_too_hard): its `mean_spread = 0.15` from rewards clustering around 0.5 fits the same capped reward. That number should not be read as difficulty.
+
+**What the metrics missed**
+- `possibly_broken` stayed `False`. It requires `pass_rate == 0` **and** `signal_rate == 0` on every rung, but the 0.1-vs-0.5 wobble in `regex_correctness` gives a few "live" groups, so signal is small but non-zero. A flat-at-a-ceiling reward across the whole ladder (identical mean reward on all rungs, max < pass threshold) should probably also trip it.
+- Signal Rate alone would have reported "6–17% signal, mostly too hard" — plausible-sounding and wrong. The ladder view plus a per-component look is what exposed it.
+
+**Caveats**
+- 4b and 14b are partial (9 and 10 tasks). 4b writes very long answers (mean ≈ 4.2k output tokens, max ≈ 10k) and hit the 45-min per-model limit; 14b was stopped by the 2.5h budget. A full ladder needs ~4h on this GPU.
+- Settings differ from the M4 runs: `--max-tokens 16384` and a 20k context were added because qwen3:4b otherwise generated until the 10-min per-rollout timeout on every attempt. Group size is 4 throughout.
+- Only one sample answer was hand-checked for equivalence. Before filing an issue on the environment, check a handful more and read the grader's source for how `match_accuracy` is computed.
+- Different hardware (A40 vs M4) and Ollama build; same `qwen3` tags and quantization.
+
+**Ops notes (RunPod)**
+- Community-cloud pods with `--public-ip` were never available across 5 attempts; secure-cloud A40/A6000/3090 rented fine.
+- Pod setup takes ~2 min; all five models pull in about a minute.
+- The pod image's `uv` is too old for the current `prime` CLI, and `prime`'s own dependencies clash with `verifiers 0.3.0` on Linux. Installing the env straight from its Hub index (`uv pip install <env> --extra-index-url https://hub.primeintellect.ai/<owner>/<env>/install/simple/`) avoids both.
+
+---
+
 ## 2026-09-17 — gsm8k difficulty curve (Phase 4, first environment)
 
 **What we ran**
