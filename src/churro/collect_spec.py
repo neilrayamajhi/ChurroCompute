@@ -16,7 +16,7 @@ def _write_run(
     model: str = "qwen3:1.7b",
     rollouts: list[dict[str, object]] | None = None,
 ) -> Path:
-    run_dir = tmp_path / f"{env_id}--{model}" / "abc12345"
+    run_dir = tmp_path / f"{env_id}--{model.replace(':', '_')}" / "abc12345"
     run_dir.mkdir(parents=True)
     (run_dir / "metadata.json").write_text(
         json.dumps(
