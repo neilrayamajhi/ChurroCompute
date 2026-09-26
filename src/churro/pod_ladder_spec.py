@@ -12,6 +12,7 @@ from churro.pod_ladder import (
     GpuOffer,
     LadderPlan,
     LadderStatus,
+    parallel_requests_for,
     parse_status,
     rank_gpu_offers,
     render_pod_script,
@@ -19,6 +20,7 @@ from churro.pod_ladder import (
 )
 from churro.schema import ModelId
 
+PARALLEL = 6
 RTX_4090 = "NVIDIA GeForce RTX 4090"
 RTX_3090 = "NVIDIA GeForce RTX 3090"
 A100 = "NVIDIA A100 80GB PCIe"
@@ -30,9 +32,11 @@ def _gpu(
     community: float | None,
     secure: float | None,
     available: bool = True,
+    memory_gb: int = 24,
 ) -> dict[str, object]:
     return {
         "gpuId": gpu_id,
+        "memoryInGb": memory_gb,
         "available": available,
         "communityCloud": community is not None,
         "communityPricePerHr": community,
@@ -50,6 +54,7 @@ def _plan(ladder: tuple[str, ...] = ("qwen3:0.6b", "qwen3:14b")) -> LadderPlan:
         per_model_timeout_s=2700,
         per_rollout_timeout_s=600,
         self_destruct_s=9000,
+        parallel=PARALLEL,
     )
 
 
@@ -62,8 +67,8 @@ class TestRankGpuOffers:
         preferences = [(RTX_4090, "COMMUNITY"), (RTX_3090, "COMMUNITY")]
 
         assert rank_gpu_offers(gpus, preferences, max_price_per_hr=1.0) == [
-            GpuOffer(RTX_4090, "COMMUNITY", 0.34),
-            GpuOffer(RTX_3090, "COMMUNITY", 0.22),
+            GpuOffer(RTX_4090, "COMMUNITY", 0.34, 24),
+            GpuOffer(RTX_3090, "COMMUNITY", 0.22, 24),
         ]
 
     def test_drops_offers_above_price_cap(self) -> None:
@@ -71,7 +76,7 @@ class TestRankGpuOffers:
         preferences = [(RTX_4090, "SECURE"), (RTX_4090, "COMMUNITY")]
 
         assert rank_gpu_offers(gpus, preferences, max_price_per_hr=0.5) == [
-            GpuOffer(RTX_4090, "COMMUNITY", 0.34)
+            GpuOffer(RTX_4090, "COMMUNITY", 0.34, 24)
         ]
 
     def test_offer_priced_exactly_at_cap_is_kept(self) -> None:
@@ -79,7 +84,7 @@ class TestRankGpuOffers:
         gpus = [_gpu(RTX_4090, community=cap, secure=None)]
 
         assert rank_gpu_offers(gpus, [(RTX_4090, "COMMUNITY")], cap) == [
-            GpuOffer(RTX_4090, "COMMUNITY", cap)
+            GpuOffer(RTX_4090, "COMMUNITY", cap, 24)
         ]
 
     def test_drops_cloud_tier_the_gpu_is_not_offered_on(self) -> None:
@@ -96,6 +101,20 @@ class TestRankGpuOffers:
         gpus = [_gpu(A100, community=0.10, secure=0.20)]
 
         assert rank_gpu_offers(gpus, [(RTX_4090, "COMMUNITY")], 1.0) == []
+
+
+class TestParallelRequestsFor:
+    def test_48gb_card_runs_eight_requests_at_once(self) -> None:
+        assert parallel_requests_for(48) == 8
+
+    def test_24gb_card_keeps_four_so_14b_fits(self) -> None:
+        assert parallel_requests_for(24) == 4
+
+    def test_boundary_just_below_40gb_stays_at_four(self) -> None:
+        assert parallel_requests_for(39) == 4
+
+    def test_boundary_at_40gb_goes_to_eight(self) -> None:
+        assert parallel_requests_for(40) == 8
 
 
 class TestVfEvalCommand:
@@ -117,7 +136,7 @@ class TestVfEvalCommand:
             "--api-key-var",
             "OPENAI_API_KEY",
             "--max-concurrent",
-            "4",
+            str(PARALLEL),
             "--timeout",
             "600",
             "--max-tokens",
@@ -158,6 +177,11 @@ class TestRenderPodScript:
         setup_body = script[script.index("setup() {") : script.index("\n}\n")]
 
         assert 'vf.load_environment("regex-craft")' in setup_body
+
+    def test_ollama_serves_as_many_requests_as_vf_eval_sends(self) -> None:
+        script = render_pod_script(_plan())
+
+        assert f"OLLAMA_NUM_PARALLEL={PARALLEL} " in script
 
     def test_ollama_context_fits_a_full_length_completion(self) -> None:
         script = render_pod_script(_plan())

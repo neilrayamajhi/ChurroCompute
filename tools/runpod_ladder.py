@@ -9,6 +9,7 @@ import subprocess
 import sys
 import tempfile
 import time
+from dataclasses import replace
 from functools import cache
 from pathlib import Path
 
@@ -19,13 +20,14 @@ from churro.pod_ladder import (
     Cloud,
     GpuOffer,
     LadderPlan,
+    parallel_requests_for,
     parse_status,
     rank_gpu_offers,
     render_pod_script,
 )
 
-# 48GB cards first: 14b plus a 20k-token context for 4 parallel requests
-# is tight on 24GB and would spill to CPU.
+# 48GB cards first: they serve 8 requests at once (parallel_requests_for);
+# 24GB cards fall back to 4 so qwen3:14b's KV cache still fits.
 GPU_PREFERENCES: list[tuple[str, Cloud]] = [
     ("NVIDIA RTX A6000", "COMMUNITY"),
     ("NVIDIA A40", "SECURE"),
@@ -81,6 +83,7 @@ def main() -> None:
         per_model_timeout_s=45 * 60,
         per_rollout_timeout_s=10 * 60,
         self_destruct_s=int(args.max_hours * 3600),
+        parallel=parallel_requests_for(24),
     )
 
     pod_id = _resume_pod_id()
@@ -96,8 +99,10 @@ def main() -> None:
             if not offers:
                 sys.exit("No suitable GPU is available right now. Nothing was rented. Try again later.")
             _confirm_cost(offers, args.max_hours, args.yes)
-            pod_id = _create_pod(offers, plan.env_slug)
+            pod_id, offer = _create_pod(offers, plan.env_slug)
             _save_state(pod_id)
+            plan = replace(plan, parallel=parallel_requests_for(offer.memory_gb))
+            print(f"Running {plan.parallel} requests at once on this {offer.memory_gb}GB card.")
             _start_ladder(pod_id, plan)
         if not _wait_for_ladder(pod_id, args.max_hours):
             raise LadderRunError(f"the run did not finish within {args.max_hours:g}h")
@@ -199,7 +204,7 @@ def _confirm_cost(offers: list[GpuOffer], max_hours: float, skip_prompt: bool) -
         sys.exit("Cancelled. Nothing was rented.")
 
 
-def _create_pod(offers: list[GpuOffer], env_slug: str) -> str:
+def _create_pod(offers: list[GpuOffer], env_slug: str) -> tuple[str, GpuOffer]:
     for offer in offers:
         print(f"Renting {offer.gpu_id} ({offer.cloud.lower()})...")
         cmd = [
@@ -219,7 +224,7 @@ def _create_pod(offers: list[GpuOffer], env_slug: str) -> str:
         if done.returncode == 0:
             pod_id = json.loads(done.stdout)["id"]
             print(f"Pod {pod_id} is up.")
-            return pod_id
+            return pod_id, offer
         stranded = re.search(r'"id"\s*:\s*"([a-z0-9]+)"', done.stderr + done.stdout)
         if stranded:
             _delete_pod(stranded.group(1))

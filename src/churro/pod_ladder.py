@@ -9,7 +9,6 @@ from typing import Literal
 from churro.schema import ModelId
 
 OLLAMA_BASE_URL = "http://127.0.0.1:11434/v1"
-OLLAMA_PARALLEL = 4
 # Caps qwen3 thinking loops; normal answers here stay well under it.
 MAX_COMPLETION_TOKENS = 16384
 # Prompt + a full-length completion must fit, or Ollama shifts the window and
@@ -27,6 +26,7 @@ class GpuOffer:
     gpu_id: str
     cloud: Cloud
     price_per_hr: float
+    memory_gb: int
 
 
 @dataclass(frozen=True, slots=True)
@@ -38,6 +38,7 @@ class LadderPlan:
     per_model_timeout_s: int
     per_rollout_timeout_s: int
     self_destruct_s: int
+    parallel: int
 
 
 @dataclass(frozen=True, slots=True)
@@ -61,8 +62,14 @@ def rank_gpu_offers(
             "communityPricePerHr" if cloud == "COMMUNITY" else "securePricePerHr"
         )
         if isinstance(price, int | float) and price <= max_price_per_hr:
-            offers.append(GpuOffer(gpu_id, cloud, float(price)))
+            offers.append(GpuOffer(gpu_id, cloud, float(price), int(gpu["memoryInGb"])))
     return offers
+
+
+def parallel_requests_for(memory_gb: int) -> int:
+    # 14b weights (~9GB) plus a full-context KV cache per request fit 8 slots
+    # on a 48GB card; on 24GB, 8 slots would spill to CPU and crawl.
+    return 8 if memory_gb >= 40 else 4
 
 
 def vf_eval_command(plan: LadderPlan, model: ModelId) -> list[str]:
@@ -80,7 +87,7 @@ def vf_eval_command(plan: LadderPlan, model: ModelId) -> list[str]:
         "--api-key-var",
         "OPENAI_API_KEY",
         "--max-concurrent",
-        str(OLLAMA_PARALLEL),
+        str(plan.parallel),
         "--timeout",
         str(plan.per_rollout_timeout_s),
         "--max-tokens",
@@ -114,7 +121,7 @@ def render_pod_script(plan: LadderPlan) -> str:
         "setup() {",
         "  apt-get update -qq && apt-get install -y -qq lshw zstd curl &&",
         "  curl -fsSL https://ollama.com/install.sh | sh &&",
-        f"  (nohup setsid env OLLAMA_HOST=127.0.0.1 OLLAMA_NUM_PARALLEL={OLLAMA_PARALLEL} OLLAMA_CONTEXT_LENGTH={OLLAMA_CONTEXT_LENGTH} OLLAMA_KEEP_ALIVE=30m ollama serve > logs/ollama.log 2>&1 < /dev/null &) &&",
+        f"  (nohup setsid env OLLAMA_HOST=127.0.0.1 OLLAMA_NUM_PARALLEL={plan.parallel} OLLAMA_CONTEXT_LENGTH={OLLAMA_CONTEXT_LENGTH} OLLAMA_KEEP_ALIVE=30m ollama serve > logs/ollama.log 2>&1 < /dev/null &) &&",
         # Don't trust whatever uv the image happens to ship.
         f"  curl -LsSf https://astral.sh/uv/{UV_VERSION}/install.sh | sh &&",
         "  uv sync --frozen --no-dev &&",
