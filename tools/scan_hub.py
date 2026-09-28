@@ -55,10 +55,13 @@ def _candidates() -> list[dict[str, object]]:
             break
         page += 1
     # The listing can repeat an env across pages while stars shift under it.
-    unique = {e["environment"]: e for e in reversed(envs)}
-    return [
-        e for e in unique.values() if is_scan_candidate(list(e.get("tags") or []))
-    ][::-1]
+    seen: set[object] = set()
+    unique = []
+    for e in envs:
+        if e["environment"] not in seen:
+            seen.add(e["environment"])
+            unique.append(e)
+    return [e for e in unique if is_scan_candidate(list(e.get("tags") or []))]
 
 
 def _check(env_slug: str, timeout: int) -> str:
