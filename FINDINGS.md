@@ -11,6 +11,33 @@ Format for each entry:
 
 ---
 
+## 2026-09-28 — Grader pre-flight across the 39 most-starred single-turn Hub envs
+
+**What we ran**
+`tools/scan_hub.py` over the public Prime Hub (1,752 envs), keeping single-turn envs our Ollama + verifiers 0.3.0 stack can run: no sandbox, agents, tool use, LLM judges or verifiers-v1. That left 252; the 39 most-starred were checked. Each env was installed into a throwaway uv overlay, and `churro.grader_check` scored its reference answer (plain, `oxed{}`, parser-tag forms), a wrong answer and a blank one through the env's own rubric, in the shape verifiers passes during a real rollout. Free: no GPU, no inference.
+
+**What we measured**
+| Outcome | Count | Envs |
+|---|---|---|
+| ok (grader separates right from wrong) | **18** | OpenMed_MedMCQA, reverse-text, arc-agi, GoodSirMath8k, ascii-tree, legalbench, mbti, OpenMed_ICD10, will/gsm8k, OpenMed_BioASQ, OpenMed_HealthFact, extract-zero, OpenMed_DDI, OpenMed_MedDialog, OpenMed_ADE, OpenMed_DDXPlus, OpenMed_RadQA, fingpt-sentiment |
+| cannot tell right from wrong | 1 | kyleavery/capa |
+| needs Linux (math-verify's process pool can't spawn on Windows) | 3 | acereason-math, deepscaler-math, skywork-math |
+| inconclusive (reference column isn't a literal answer) | 8 | ifeval, socratic-method, contract_nli_env, cybersoceval, pydantic-adherence, context-select, dev-team/gsm8k, countdown |
+| won't load on verifiers 0.3.0 | 7 | backend-bench, deepconf, science-env, thematic-generalization, geroprotector-ranking, mmlu-pro-health, blind-cartographer |
+| check timed out (>5 min) | 2 | sv-env-network-logs, mnist-adversarial |
+
+**What it means**
+- **About half (18/39) of the most popular runnable-looking envs are ready to fingerprint** with a verified grader. That's the queue for Phase 7.
+- **Broken graders are real but not the majority here.** After regex-craft and iso8601 (both broken), only 1 of these 39 fails outright. "Inconclusive" means the check can't build a correct answer from the dataset, not that the grader is bad; those need a hand check.
+- **18% (7/39) don't load on the locked verifiers version**, plus gsm8k 0.1.x itself (missing `MathRubric`). Pinning verifiers 0.3.0 is starting to cost coverage; newer envs target newer verifiers.
+
+**Caveats**
+- Three rows per env. A grader could pass on those rows and still misbehave elsewhere.
+- The check needs a literal reference answer, so envs graded by constraints (ifeval), similarity, or anything other than matching the answer column land in "inconclusive".
+- "Top 39 by stars" isn't a random sample of the Hub.
+
+---
+
 ## 2026-09-26 — iso8601-recurrence difficulty curve (grader scores every answer 0 under verifiers 0.3.0)
 
 **What we ran**
