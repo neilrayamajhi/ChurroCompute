@@ -14,7 +14,7 @@ Format for each entry:
 ## 2026-09-28 — Grader pre-flight across the 39 most-starred single-turn Hub envs
 
 **What we ran**
-`tools/scan_hub.py` over the public Prime Hub (1,752 envs), keeping single-turn envs our Ollama + verifiers 0.3.0 stack can run: no sandbox, agents, tool use, LLM judges or verifiers-v1. That left 252; the 39 most-starred were checked. Each env was installed into a throwaway uv overlay, and `churro.grader_check` scored its reference answer (plain, `oxed{}`, parser-tag forms), a wrong answer and a blank one through the env's own rubric, in the shape verifiers passes during a real rollout. Free: no GPU, no inference.
+`tools/scan_hub.py` over the public Prime Hub (1,752 envs), keeping single-turn envs our Ollama + verifiers 0.3.0 stack can run: no sandbox, agents, tool use, LLM judges or verifiers-v1. That left 252; the 39 most-starred were checked. Each env was installed into a throwaway uv overlay, and `churro.grader_check` scored its reference answer (plain, `\boxed{}`, parser-tag forms), a wrong answer and a blank one through the env's own rubric, in the shape verifiers passes during a real rollout. Free: no GPU, no inference.
 
 **What we measured**
 | Outcome | Count | Envs |
