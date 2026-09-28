@@ -11,6 +11,8 @@ EXPLANATIONS = {
     "ok": "the grader scores the reference answer above a wrong and a blank one",
     "rejects_correct_answer": "the grader gives the reference answer 0",
     "cannot_tell_right_from_wrong": "a wrong or blank answer scores as well as the reference",
+    "inconclusive": "the reference scores 0 in every form, so it may not be a literal answer; "
+    "check this env by hand",
 }
 
 

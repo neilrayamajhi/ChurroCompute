@@ -26,6 +26,14 @@ def _boxed_only_grader(completion: object, answer: str, **kwargs: object) -> flo
     return 1.0 if _text(completion) == f"\\boxed{{{answer}}}" else 0.0
 
 
+def _xml_tag_grader(completion: object, answer: str, **kwargs: object) -> float:
+    return 1.0 if _text(completion) == f"<reversed_text>{answer}</reversed_text>" else 0.0
+
+
+def _spec_not_answer_grader(completion: object, answer: str, **kwargs: object) -> float:
+    return 1.0 if "quotation" in _text(completion) else 0.0
+
+
 def _dict_only_grader(completion: object, answer: str, **kwargs: object) -> float:
     last = completion[-1]  # type: ignore[index]
     text = last.get("content") if isinstance(last, dict) else ""
@@ -41,7 +49,9 @@ def _info_grader(completion: object, answer: str, **kwargs: object) -> float:
     return 1.0 if _text(completion) == expected else 0.0
 
 
-def _env(reward_func: object, rows: int = 3) -> vf.Environment:
+def _env(
+    reward_func: object, rows: int = 3, parser: vf.Parser | None = None
+) -> vf.Environment:
     dataset = Dataset.from_list(
         [
             {"prompt": [{"role": "user", "content": f"task {i}"}], "answer": REFERENCE}
@@ -49,32 +59,41 @@ def _env(reward_func: object, rows: int = 3) -> vf.Environment:
         ]
     )
     return vf.SingleTurnEnv(
-        dataset=dataset, rubric=vf.Rubric(funcs=[reward_func], weights=[1.0])
+        dataset=dataset,
+        parser=parser or vf.Parser(),
+        rubric=vf.Rubric(funcs=[reward_func], weights=[1.0]),
     )
 
 
 class TestGraderVerdict:
     def test_reference_scoring_above_wrong_and_blank_is_ok(self) -> None:
-        assert grader_verdict(reference=1.0, wrong=0.0, blank=0.0) == "ok"
+        assert grader_verdict(
+            reference=1.0, reference_as_dict=1.0, wrong=0.0, blank=0.0
+        ) == "ok"
 
-    def test_reference_scoring_zero_like_everything_else_rejects_correct(
+    def test_reference_scoring_only_when_passed_as_dict_rejects_correct(
         self,
     ) -> None:
-        assert grader_verdict(reference=0.0, wrong=0.0, blank=0.0) == (
-            "rejects_correct_answer"
-        )
+        assert grader_verdict(
+            reference=0.0, reference_as_dict=1.0, wrong=0.0, blank=0.0
+        ) == "rejects_correct_answer"
+
+    def test_reference_scoring_zero_in_every_shape_is_inconclusive(self) -> None:
+        assert grader_verdict(
+            reference=0.0, reference_as_dict=0.0, wrong=0.0, blank=0.0
+        ) == "inconclusive"
 
     def test_reference_tied_with_wrong_cannot_tell_right_from_wrong(self) -> None:
-        assert grader_verdict(reference=0.5, wrong=0.5, blank=0.0) == (
-            "cannot_tell_right_from_wrong"
-        )
+        assert grader_verdict(
+            reference=0.5, reference_as_dict=0.5, wrong=0.5, blank=0.0
+        ) == "cannot_tell_right_from_wrong"
 
     def test_wrong_answer_beating_reference_cannot_tell_right_from_wrong(
         self,
     ) -> None:
-        assert grader_verdict(reference=0.2, wrong=0.9, blank=0.0) == (
-            "cannot_tell_right_from_wrong"
-        )
+        assert grader_verdict(
+            reference=0.2, reference_as_dict=0.2, wrong=0.9, blank=0.0
+        ) == "cannot_tell_right_from_wrong"
 
 
 class TestCheckEnvironment:
@@ -83,8 +102,8 @@ class TestCheckEnvironment:
 
         assert report == GraderReport(
             rows=[
-                RowCheck(reference=1.0, wrong=0.0, blank=0.0, verdict="ok"),
-                RowCheck(reference=1.0, wrong=0.0, blank=0.0, verdict="ok"),
+                RowCheck(reference=1.0, reference_as_dict=1.0, wrong=0.0, blank=0.0, verdict="ok"),
+                RowCheck(reference=1.0, reference_as_dict=1.0, wrong=0.0, blank=0.0, verdict="ok"),
             ],
             verdict="ok",
         )
@@ -93,6 +112,19 @@ class TestCheckEnvironment:
         report = check_environment(_env(_boxed_only_grader), max_rows=2)
 
         assert report.verdict == "ok"
+
+    def test_grader_expecting_the_parsers_xml_tag_passes(self) -> None:
+        parser = vf.XMLParser(fields=["reversed_text"], answer_field="reversed_text")
+        report = check_environment(_env(_xml_tag_grader, parser=parser), max_rows=2)
+
+        assert report.verdict == "ok"
+
+    def test_env_whose_answer_column_is_not_an_answer_is_inconclusive(
+        self,
+    ) -> None:
+        report = check_environment(_env(_spec_not_answer_grader), max_rows=2)
+
+        assert report.verdict == "inconclusive"
 
     def test_dict_only_grader_is_caught_rejecting_correct_answers(self) -> None:
         report = check_environment(_env(_dict_only_grader), max_rows=2)
