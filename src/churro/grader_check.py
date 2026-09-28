@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-import asyncio
 from collections import Counter
 from dataclasses import dataclass
 from typing import Literal
 
 import verifiers as vf
-from verifiers.types import AssistantMessage, State
+
+from churro.rescore import score_text
 
 Verdict = Literal[
     "ok", "rejects_correct_answer", "cannot_tell_right_from_wrong", "inconclusive"
@@ -48,10 +48,10 @@ def check_environment(env: vf.Environment, max_rows: int = 5) -> GraderReport:
     checks = []
     for row in rows:
         forms = _reference_forms(str(row.get("answer", "")), _answer_tags(env))
-        reference = max(_score(env, row, text) for text in forms)
-        reference_as_dict = max(_score(env, row, text, as_dict=True) for text in forms)
-        wrong = _score(env, row, WRONG_ANSWER)
-        blank = _score(env, row, "")
+        reference = max(score_text(env, row, text) for text in forms)
+        reference_as_dict = max(score_text(env, row, text, as_dict=True) for text in forms)
+        wrong = score_text(env, row, WRONG_ANSWER)
+        blank = score_text(env, row, "")
         verdict = grader_verdict(reference, reference_as_dict, wrong, blank)
         checks.append(RowCheck(reference, reference_as_dict, wrong, blank, verdict))
     return GraderReport(rows=checks, verdict=_majority(checks))
@@ -67,27 +67,6 @@ def _answer_tags(env: vf.Environment) -> set[str]:
 def _reference_forms(answer: str, tags: set[str]) -> list[str]:
     tagged = [f"<{tag}>{answer}</{tag}>" for tag in sorted(tags)]
     return [answer, f"\\boxed{{{answer}}}", *tagged]
-
-
-def _score(
-    env: vf.Environment, row: dict[str, object], text: str, as_dict: bool = False
-) -> float:
-    # Build the state the way a real rollout does: the completion is a list of
-    # AssistantMessage objects, not dicts, and row columns arrive as-is.
-    state = State(
-        input=dict(row),
-        prompt=row["prompt"],
-        completion=[
-            {"role": "assistant", "content": text}
-            if as_dict
-            else AssistantMessage(content=text)
-        ],
-        answer=row.get("answer", ""),
-        info=row.get("info") or {},
-        trajectory=[],
-    )
-    asyncio.run(env.rubric.score_group([state]))
-    return float(state["reward"])
 
 
 def _majority(checks: list[RowCheck]) -> Verdict:
