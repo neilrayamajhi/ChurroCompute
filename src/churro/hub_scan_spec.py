@@ -21,6 +21,12 @@ class TestClassifyCheck:
 
         assert classify_check(1, stdout, "") == "inconclusive"
 
+    def test_grader_crashing_on_windows_multiprocessing_needs_linux(self) -> None:
+        stdout = f"grader check for {ENV}: inconclusive (the reference ...)"
+        stderr = "OSError: [WinError 6] The handle is invalid"
+
+        assert classify_check(1, stdout, stderr) == "needs_linux"
+
     def test_unresolvable_dependencies_are_install_failures(self) -> None:
         stderr = "  x No solution found when resolving `--with` dependencies:\n"
 

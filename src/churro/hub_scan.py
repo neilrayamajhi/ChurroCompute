@@ -7,6 +7,7 @@ ScanOutcome = Literal[
     "rejects_correct_answer",
     "cannot_tell_right_from_wrong",
     "inconclusive",
+    "needs_linux",
     "install_failed",
     "load_failed",
     "timeout",
@@ -19,6 +20,9 @@ _VERDICTS: tuple[ScanOutcome, ...] = (
     "cannot_tell_right_from_wrong",
     "inconclusive",
 )
+# Grader libraries (e.g. math-verify's process pool) that can't spawn workers
+# on Windows score everything 0 there; the verdict is only trustworthy on Linux.
+_WINDOWS_ONLY_ERRORS = ("[WinError 6] The handle is invalid", "process pool")
 _INSTALL_ERRORS = ("No solution found", "not found in the package registry", "Failed to build")
 
 
@@ -38,6 +42,8 @@ def is_scan_candidate(tags: list[str]) -> bool:
 
 
 def classify_check(returncode: int, stdout: str, stderr: str) -> ScanOutcome:
+    if any(marker in stderr for marker in _WINDOWS_ONLY_ERRORS):
+        return "needs_linux"
     for line in stdout.splitlines():
         if line.startswith("grader check for "):
             verdict = line.split(": ", 1)[1].split(" ", 1)[0]
