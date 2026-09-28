@@ -66,17 +66,30 @@ def _candidates() -> list[dict[str, object]]:
 
 def _check(env_slug: str, timeout: int) -> str:
     env_name = env_slug.rsplit("/", 1)[-1]
+    proc = subprocess.Popen(
+        ["uv", "run", "--with", env_name,
+         "--extra-index-url", PRIME_HUB_INDEX.format(slug=env_slug),
+         "python", "tools/check_grader.py", env_name, "--rows", "3"],
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        text=True, encoding="utf-8", errors="replace", env=_env(),
+    )
     try:
-        done = subprocess.run(
-            ["uv", "run", "--with", env_name,
-             "--extra-index-url", PRIME_HUB_INDEX.format(slug=env_slug),
-             "python", "tools/check_grader.py", env_name, "--rows", "3"],
-            capture_output=True, text=True, encoding="utf-8", errors="replace",
-            timeout=timeout, env=_env(),
-        )
+        stdout, stderr = proc.communicate(timeout=timeout)
     except subprocess.TimeoutExpired:
+        # Killing only uv leaves its python child holding the pipes open, so
+        # communicate() would block forever; take down the whole tree.
+        _kill_tree(proc.pid)
+        proc.communicate()
         return "timeout"
-    return classify_check(done.returncode, done.stdout, done.stderr)
+    return classify_check(proc.returncode, stdout, stderr)
+
+
+def _kill_tree(pid: int) -> None:
+    if sys.platform == "win32":
+        subprocess.run(["taskkill", "/T", "/F", "/PID", str(pid)], capture_output=True)
+    else:
+        subprocess.run(["pkill", "-KILL", "-P", str(pid)], capture_output=True)
+        subprocess.run(["kill", "-KILL", str(pid)], capture_output=True)
 
 
 def _already_scanned(path: Path) -> set[str]:
