@@ -333,7 +333,7 @@ def _collect_and_report(dest: Path) -> None:
         env_ids.add(json.loads((run_dir / "metadata.json").read_text())["env_id"])
         subprocess.run([sys.executable, "tools/collect_run.py", str(run_dir)])
     for env_id in sorted(env_ids):
-        subprocess.run([sys.executable, "tools/report_difficulty.py", f"data/raw/{env_id}.jsonl"])
+        subprocess.run([sys.executable, "tools/report_card.py", f"data/raw/{env_id}.jsonl"])
 
 
 def _delete_pod(pod_id: str) -> None:
