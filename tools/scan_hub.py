@@ -54,7 +54,11 @@ def _candidates() -> list[dict[str, object]]:
         if page * PAGE_SIZE >= listing["total"]:
             break
         page += 1
-    return [e for e in envs if is_scan_candidate(list(e.get("tags") or []))]
+    # The listing can repeat an env across pages while stars shift under it.
+    unique = {e["environment"]: e for e in reversed(envs)}
+    return [
+        e for e in unique.values() if is_scan_candidate(list(e.get("tags") or []))
+    ][::-1]
 
 
 def _check(env_slug: str, timeout: int) -> str:
