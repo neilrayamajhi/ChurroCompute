@@ -41,6 +41,10 @@ GPU_PREFERENCES: list[tuple[str, Cloud]] = [
 POD_IMAGE = "runpod/pytorch:1.0.3-cu1281-torch291-ubuntu2404"
 BUDGET_LIMIT_USD = 3.0
 POLL_SECONDS = 60
+# The pod outlives this machine's deadline so the final snapshot can still be
+# downloaded; with equal deadlines the pod deleted itself first and took the
+# last model's results with it.
+SELF_DESTRUCT_GRACE_S = 15 * 60
 SSH_KEY = Path.home() / ".ssh" / "id_ed25519"
 RESULTS_ROOT = Path("outputs/runpod")
 STATE_FILE = RESULTS_ROOT / "active.json"
@@ -82,7 +86,7 @@ def main() -> None:
         rollouts_per_example=args.rollouts_per_example,
         per_model_timeout_s=45 * 60,
         per_rollout_timeout_s=10 * 60,
-        self_destruct_s=int(args.max_hours * 3600),
+        self_destruct_s=int(args.max_hours * 3600) + SELF_DESTRUCT_GRACE_S,
         parallel=parallel_requests_for(24),
     )
 
@@ -191,12 +195,12 @@ def _ensure_ssh_key() -> None:
 
 
 def _confirm_cost(offers: list[GpuOffer], max_hours: float, skip_prompt: bool) -> None:
-    worst = max(o.price_per_hr for o in offers) * max_hours
+    worst = max(o.price_per_hr for o in offers) * (max_hours + SELF_DESTRUCT_GRACE_S / 3600)
     first = offers[0]
     print(
         f"Will try {first.gpu_id} ({first.cloud.lower()}) at ${first.price_per_hr:.2f}/hr first, "
         f"then {len(offers) - 1} fallback(s).\n"
-        f"The pod deletes itself after {max_hours:g}h at the latest: worst case ≈ ${worst:.2f}."
+        f"The pod deletes itself after {max_hours + SELF_DESTRUCT_GRACE_S / 3600:g}h at the latest: worst case ≈ ${worst:.2f}."
     )
     if worst > BUDGET_LIMIT_USD:
         sys.exit(f"Worst case is over the ${BUDGET_LIMIT_USD:.2f} limit. Lower --max-hours or --max-price-per-hr.")
