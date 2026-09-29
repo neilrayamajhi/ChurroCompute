@@ -11,6 +11,48 @@ Format for each entry:
 
 ---
 
+## 2026-09-28 — First full report cards on rented GPUs: gsm8k and reverse-text
+
+**What we ran**
+Both envs passed the grader pre-flight first. Then:
+```
+uv run python tools/runpod_ladder.py will/gsm8k --max-hours 3.5
+uv run python tools/runpod_ladder.py primeintellect/reverse-text --max-hours 3.5
+uv run python tools/report_card.py data/raw/<env>.jsonl
+```
+RunPod A40 (48GB, $0.49/hr), 8 concurrent requests, `-n 30 -r 4 --max-tokens 16384 --timeout 600`, 45-min cap per rung. gsm8k took 3.2h (~$1.60); reverse-text hit its 3.5h budget (~$1.74).
+
+**gsm8k (`will/gsm8k` 0.1.2): the full ladder, and it matches the M4**
+| Model | tasks | pass | signal | easy | hard |
+|---|---|---|---|---|---|
+| qwen3:0.6b | 30 | 68% | **37% ± 17%** | 13 | 6 |
+| qwen3:1.7b | 30 | 94% | 10% ± 11% | 26 | 1 |
+| qwen3:4b | 12 | 100% | 0% | 12 | 0 |
+| qwen3:8b | 30 | 100% | 0% | 30 | 0 |
+| qwen3:14b | 30 | 100% | 0% | 30 | 0 |
+
+Compared with the 2026-09-17 M4 run of `primeintellect/gsm8k`: 0.6b gives 60% pass / 43% ± 18% signal there and 68% / 37% ± 17% here; 4b–14b are 100% pass / 0% signal in both. That's well within error bars. The 1.7b gap (23% there vs 10% here) is partly group size: the M4 1.7b run used 8 attempts per task, which gives a group more chances to disagree. **So the rented-GPU pipeline reproduces the M4 results,** despite a different gsm8k package, `--max-tokens`, hardware and Ollama build. It's also the first ladder with n=30 at every rung above 0.6b; the M4 ladder had n=10 at 4b/8b and n=1 at 14b. Verdict unchanged: gsm8k is only useful for training the smallest model.
+
+**reverse-text (0.1.5): graded rewards, high signal, expensive to run**
+| Model | tasks | pass | signal | effective reward bins | cut off by timeout |
+|---|---|---|---|---|---|
+| qwen3:0.6b | 26 | 0% | 96% ± 7% | 47.9 | 8 of 104 |
+| qwen3:1.7b | 8 | 5% | 88% ± 23% | 15.2 | 16 of 36 |
+| qwen3:4b | 7 | 100% | 86% ± 26% | 16.4 | 13 of 32 |
+| qwen3:8b | 10 | 97% | 90% ± 19% | 27.4 | 10 of 40 |
+| qwen3:14b | — | — | — | — | lost (see below) |
+
+- **Truly graded reward.** 96 effective bins overall, versus 1.15 for regex-craft, whose partial credit was fake.
+- **The high signal is mostly real, not float jitter.** Attempts on the same task typically differ by 0.14–0.19 (median within-group range), and only 2 live groups differ by less than 0.05. That fits PRD Part 10: graded rewards give groups more ways to disagree. Caveat for the metric generally: `signal_rate` counts *any* within-group difference as live, so for continuous graders it should be read together with `mean_spread` (0.06–0.10 here).
+- **"Cheap" task, expensive rollouts.** Reversing one sentence, qwen3 thinks for ~800 (0.6b), ~3.6k (1.7b) and ~7.9k (4b) output tokens on average, so many attempts hit the 10-minute per-rollout timeout. The collector skipped those. Samples above 0.6b are small (7–10 tasks).
+
+**Caveats**
+- 14b reverse-text was lost to a race: the pod's self-destruct and the local runner's deadline were both 3.5h, and the pod deleted itself before the final snapshot downloaded. Fixed afterwards (the pod now outlives the local deadline by 15 min).
+- gsm8k 4b has 12 tasks (it hit its 45-min cap).
+- `will/gsm8k` is not the same package as the M4 run's `primeintellect/gsm8k`, though both grade GSM8K answers.
+
+---
+
 ## 2026-09-28 — Grader pre-flight across the 39 most-starred single-turn Hub envs
 
 **What we ran**
