@@ -11,6 +11,62 @@ Format for each entry:
 
 ---
 
+## 2026-09-29 — Batch 2: MedMCQA, fingpt-sentiment, ascii-tree, legalbench (and metric 6 catches fingpt)
+
+**What we ran**
+Same setup as the gsm8k/reverse-text entry: RunPod A40, `-n 30 -r 4 --max-tokens 16384`, 45-min cap per rung, 3.5h budget, grader pre-flight first. Cost ≈ $4.70 for all four.
+
+**OpenMed_MedMCQA (0.2.0): useful at every rung**
+| Model | tasks | pass | signal |
+|---|---|---|---|
+| qwen3:0.6b | 30 | 42% | 93% ± 9% |
+| qwen3:1.7b | 30 | 45% | 43% ± 18% |
+| qwen3:4b | 3 | 100% | 67% ± 53% |
+| qwen3:8b | 30 | 57% | 83% ± 13% |
+| qwen3:14b | 30 | 72% | 87% ± 12% |
+
+This is the first env where even 14b has plenty left to learn (72% pass, 87% signal). The reward is mildly graded (~3–4 effective bins). The grader accepts reworded answers inside `oxed{}` (0% narrowness).
+
+**ascii-tree (0.1.6): graded and useful from 1.7b up**
+| Model | tasks | pass | signal | effective bins |
+|---|---|---|---|---|
+| qwen3:0.6b | 30 | 0% | 63% ± 17% | 5.9 |
+| qwen3:1.7b | 30 | 12% | 100% | 66.9 |
+| qwen3:4b | 8 | 50% | 88% ± 23% | 15.7 |
+| qwen3:8b | 14 | 24% | 100% | 35.7 |
+| qwen3:14b | 12 | 62% | 83% ± 21% | 12.5 |
+
+It has a genuinely graded reward (62 effective bins overall); `best_signal_model=qwen3:1.7b`. Rungs 4b–14b are partial (8–14 tasks) because long answers hit the per-rung cap.
+
+**fingpt-sentiment (0.1.1): pass rate falls as models get bigger, because of the grader**
+| Model | tasks | pass | signal |
+|---|---|---|---|
+| qwen3:0.6b | 30 | 27% | 87% ± 12% |
+| qwen3:1.7b | 30 | 21% | 33% ± 17% |
+| qwen3:4b | 22 | 9% | 50% ± 21% |
+| qwen3:8b | 30 | **0%** | 0% |
+
+The 8b rollouts answer `Answer: neutral`, which is correct, and score 0. 0.6b answers bare `neutral` and scores 1.1. Scored directly with the env's own rubric:
+
+| Submitted | Score |
+|---|---|
+| `neutral` (correct) | 1.1 |
+| `Answer: neutral` (correct) | **0.0** |
+| `The sentiment is neutral.` (correct) | **0.0** |
+| `**neutral**` (correct) | **0.0** |
+| `positive` (**wrong**) | **0.1** |
+
+**A wrong bare answer outscores a correct answer with a prefix.** The falling pass rate is bigger models formatting their answer, not getting sentiment wrong. Training on this env would reward dropping the "Answer:" prefix, not judging sentiment. This is exactly PRD Part 12's grader narrowness, and it passed the grader pre-flight because the bare reference does beat a wrong bare answer. The new narrowness check (`tools/check_narrowness.py`: reword the reference as "Answer: X", "The answer is X.", "**X**", "X.", "Final answer: X", inside the env's own answer format) flags it at **100%** of rewordings rejected, versus 0% for OpenMed_MedMCQA and gsm8k.
+
+**legalbench (0.1.1): only 1 eval task by default**
+The default `task_name=personal_jurisdiction` has 1 eval example, so the run produced n=1 at every rung. That's a meaningless card, though it only cost ~$0.16. The runner now refuses envs with fewer than 10 eval tasks before renting. legalbench needs a `task_name` (it has many) to be worth fingerprinting.
+
+**Caveats**
+- fingpt-sentiment's 14b rung was lost: the laptop slept overnight despite the keep-awake request (lid close or battery policy still force sleep), and the pod self-destructed at its deadline, with the cost correctly capped.
+- The narrowness check covers five reworded forms of the reference, on 5 tasks per env. It measures formatting tolerance, not whether the grader accepts genuinely different correct solutions.
+
+---
+
 ## 2026-09-28 — First full report cards on rented GPUs: gsm8k and reverse-text
 
 **What we ran**
