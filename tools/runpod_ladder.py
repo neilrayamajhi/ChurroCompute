@@ -50,7 +50,6 @@ POLL_SECONDS = 60
 SELF_DESTRUCT_GRACE_S = 15 * 60
 SSH_KEY = Path.home() / ".ssh" / "id_ed25519"
 RESULTS_ROOT = Path("outputs/runpod")
-STATE_FILE = RESULTS_ROOT / "active.json"
 FINISHED_STATES = {"done", "timeout", "failed"}
 UPLOAD_PATHS = ["pyproject.toml", "uv.lock", "src", "tools"]
 
@@ -93,7 +92,7 @@ def main() -> None:
         parallel=parallel_requests_for(24),
     )
 
-    pod_id = _resume_pod_id()
+    pod_id = _resume_pod_id(plan.env_slug)
     _keep_pc_awake(True)
     try:
         if pod_id:
@@ -107,7 +106,7 @@ def main() -> None:
                 sys.exit("No suitable GPU is available right now. Nothing was rented. Try again later.")
             _confirm_cost(offers, args.max_hours, args.yes)
             pod_id, offer = _create_pod(offers, plan.env_slug)
-            _save_state(pod_id)
+            _save_state(plan.env_slug, pod_id)
             plan = replace(plan, parallel=parallel_requests_for(offer.memory_gb))
             print(f"Running {plan.parallel} requests at once on this {offer.memory_gb}GB card.")
             _start_ladder(pod_id, plan)
@@ -121,6 +120,7 @@ def main() -> None:
         if pod_id:
             _download_snapshot(pod_id)
             _delete_pod(pod_id)
+            _state_file(plan.env_slug).unlink(missing_ok=True)
             _collect_and_report(RESULTS_ROOT / pod_id)
         _warn_about_running_pods()
         _keep_pc_awake(False)
@@ -174,20 +174,28 @@ def _runpodctl(*args: str) -> object:
     return json.loads(done.stdout) if done.stdout.strip() else None
 
 
-def _resume_pod_id() -> str | None:
-    if not STATE_FILE.is_file():
+def _state_file(env_slug: str) -> Path:
+    # One file per env, so a second run (another env, or a dry run) can never
+    # reconnect to and then delete a pod that belongs to a different run.
+    return RESULTS_ROOT / f"active-{env_slug.replace('/', '__')}.json"
+
+
+def _resume_pod_id(env_slug: str) -> str | None:
+    state = _state_file(env_slug)
+    if not state.is_file():
         return None
-    pod_id = json.loads(STATE_FILE.read_text())["pod_id"]
+    pod_id = json.loads(state.read_text())["pod_id"]
     alive = subprocess.run(["runpodctl", "pod", "get", pod_id], capture_output=True).returncode == 0
     if not alive:
-        STATE_FILE.unlink()
+        state.unlink()
         return None
     return pod_id
 
 
-def _save_state(pod_id: str) -> None:
-    STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
-    STATE_FILE.write_text(json.dumps({"pod_id": pod_id}))
+def _save_state(env_slug: str, pod_id: str) -> None:
+    state = _state_file(env_slug)
+    state.parent.mkdir(parents=True, exist_ok=True)
+    state.write_text(json.dumps({"pod_id": pod_id}))
 
 
 def _ensure_ssh_key() -> None:
@@ -353,7 +361,6 @@ def _delete_pod(pod_id: str) -> None:
     done = subprocess.run(["runpodctl", "pod", "delete", pod_id], capture_output=True, text=True)
     if done.returncode == 0:
         print(f"Deleted pod {pod_id}. Billing for it has stopped.")
-        STATE_FILE.unlink(missing_ok=True)
     else:
         print(f"⚠ Could not delete pod {pod_id}: {done.stderr.strip()}\n  Delete it yourself: runpodctl pod delete {pod_id}")
 
