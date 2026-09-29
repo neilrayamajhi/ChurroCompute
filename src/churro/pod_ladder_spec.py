@@ -189,6 +189,14 @@ class TestRenderPodScript:
         assert OLLAMA_CONTEXT_LENGTH > MAX_COMPLETION_TOKENS
         assert f"OLLAMA_CONTEXT_LENGTH={OLLAMA_CONTEXT_LENGTH} " in script
 
+    def test_retries_the_env_load_so_a_rate_limited_download_can_recover(
+        self,
+    ) -> None:
+        script = render_pod_script(_plan())
+        setup_body = script[script.index("setup() {") : script.index("\n}\n")]
+
+        assert setup_body.count('vf.load_environment("regex-craft")') == 3
+
     def test_bounds_each_model_run_by_the_per_model_timeout(self) -> None:
         plan = _plan()
         script = render_pod_script(plan)

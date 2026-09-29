@@ -128,7 +128,11 @@ def render_pod_script(plan: LadderPlan) -> str:
         # Same install `prime env install` performs, minus the prime CLI's own
         # dependency tree, which clashes with verifiers 0.3.0 on Linux.
         f"  uv pip install --python .venv/bin/python {shlex.quote(env_name)} --extra-index-url {PRIME_HUB_INDEX.format(slug=plan.env_slug)} &&",
-        f"  .venv/bin/python -c {shlex.quote(load_check)} &&",
+        # Loading usually downloads the dataset from Hugging Face, which
+        # rate-limits anonymous requests from shared RunPod IPs (429): retry.
+        f"  {{ .venv/bin/python -c {shlex.quote(load_check)} ||"
+        f" {{ sleep 120; .venv/bin/python -c {shlex.quote(load_check)}; }} ||"
+        f" {{ sleep 300; .venv/bin/python -c {shlex.quote(load_check)}; }}; }} &&",
         "  for _ in $(seq 60); do curl -sf http://127.0.0.1:11434/api/version >/dev/null && break; sleep 2; done &&",
         f"  {pulls}",
         "}",
