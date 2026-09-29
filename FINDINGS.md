@@ -25,7 +25,7 @@ Same setup as the gsm8k/reverse-text entry: RunPod A40, `-n 30 -r 4 --max-tokens
 | qwen3:8b | 30 | 57% | 83% ± 13% |
 | qwen3:14b | 30 | 72% | 87% ± 12% |
 
-This is the first env where even 14b has plenty left to learn (72% pass, 87% signal). The reward is mildly graded (~3–4 effective bins). The grader accepts reworded answers inside `oxed{}` (0% narrowness).
+This is the first env where even 14b has plenty left to learn (72% pass, 87% signal). The reward is mildly graded (~3–4 effective bins). The grader accepts reworded answers inside `\boxed{}` (0% narrowness).
 
 **ascii-tree (0.1.6): graded and useful from 1.7b up**
 | Model | tasks | pass | signal | effective bins |
