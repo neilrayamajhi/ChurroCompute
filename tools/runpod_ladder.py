@@ -40,6 +40,9 @@ GPU_PREFERENCES: list[tuple[str, Cloud]] = [
 ]
 POD_IMAGE = "runpod/pytorch:1.0.3-cu1281-torch291-ubuntu2404"
 BUDGET_LIMIT_USD = 3.0
+# Below this, error bars are too wide to say anything (legalbench's default
+# config evaluates on a single task).
+MIN_EVAL_TASKS = 10
 POLL_SECONDS = 60
 # The pod outlives this machine's deadline so the final snapshot can still be
 # downloaded; with equal deadlines the pod deleted itself first and took the
@@ -151,6 +154,12 @@ def _require_working_grader(env_slug: str) -> None:
     )
     verdict = [ln for ln in done.stdout.splitlines() if ln.startswith("grader check")]
     print(f"  {verdict[-1] if verdict else done.stderr.strip()[-300:]}")
+    tasks = re.search(r"^eval tasks: (\d+)$", done.stdout, re.MULTILINE)
+    if tasks and int(tasks.group(1)) < MIN_EVAL_TASKS:
+        sys.exit(
+            f"Not renting a GPU: {env_name} evaluates on only {tasks.group(1)} task(s) with its "
+            f"default settings, too few for a meaningful report card (minimum {MIN_EVAL_TASKS})."
+        )
     if done.returncode != 0:
         sys.exit(
             "Not renting a GPU: this env's grader would make every number meaningless.\n"

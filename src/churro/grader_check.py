@@ -28,6 +28,7 @@ class RowCheck:
 class GraderReport:
     rows: list[RowCheck]
     verdict: Verdict
+    n_tasks: int
 
 
 def grader_verdict(
@@ -54,7 +55,7 @@ def check_environment(env: vf.Environment, max_rows: int = 5) -> GraderReport:
         blank = score_text(env, row, "")
         verdict = grader_verdict(reference, reference_as_dict, wrong, blank)
         checks.append(RowCheck(reference, reference_as_dict, wrong, blank, verdict))
-    return GraderReport(rows=checks, verdict=_majority(checks))
+    return GraderReport(rows=checks, verdict=_majority(checks), n_tasks=len(dataset))
 
 
 def _answer_tags(env: vf.Environment) -> set[str]:

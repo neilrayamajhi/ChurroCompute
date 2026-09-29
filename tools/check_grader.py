@@ -30,6 +30,7 @@ def main() -> None:
             f"  task {i}: reference={row.reference:.2f}  wrong={row.wrong:.2f}  "
             f"blank={row.blank:.2f}  -> {row.verdict}"
         )
+    print(f"eval tasks: {report.n_tasks}")
     print(f"grader check for {args.env_name}: {report.verdict} ({EXPLANATIONS[report.verdict]})")
     sys.exit(0 if report.verdict == "ok" else 1)
 

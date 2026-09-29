@@ -106,6 +106,7 @@ class TestCheckEnvironment:
                 RowCheck(reference=1.0, reference_as_dict=1.0, wrong=0.0, blank=0.0, verdict="ok"),
             ],
             verdict="ok",
+            n_tasks=3,
         )
 
     def test_grader_expecting_boxed_answers_passes(self) -> None:
@@ -137,6 +138,11 @@ class TestCheckEnvironment:
         report = check_environment(_env(_info_grader), max_rows=2)
 
         assert report.verdict == "cannot_tell_right_from_wrong"
+
+    def test_reports_how_many_tasks_the_env_evaluates_on(self) -> None:
+        report = check_environment(_env(_working_grader, rows=7), max_rows=2)
+
+        assert report.n_tasks == 7
 
     def test_checks_at_most_max_rows(self) -> None:
         report = check_environment(_env(_working_grader, rows=5), max_rows=3)
