@@ -1,0 +1,168 @@
+{
+  "env_id": "gsm8k",
+  "churro_version": "0.1.0",
+  "ladder_version": "qwen3-v1",
+  "env_version": "0.1.2",
+  "generated_at": "2026-09-29T01:22:43.527660+00:00",
+  "group_size": 4,
+  "n_rollouts": 518,
+  "grader_check": "ok",
+  "difficulty": {
+    "env_id": "gsm8k",
+    "ladder_version": "qwen3-v1",
+    "rungs": [
+      {
+        "model": "qwen3:0.6b",
+        "signal": {
+          "model": "qwen3:0.6b",
+          "n_tasks": 30,
+          "group_size": 4,
+          "signal_rate": 0.3667,
+          "signal_rate_ci95": 0.1724,
+          "dead_too_easy": 13,
+          "dead_too_hard": 6,
+          "mean_spread": 0.4452
+        },
+        "pass_rate": 0.675,
+        "mean_reward": 0.675
+      },
+      {
+        "model": "qwen3:1.7b",
+        "signal": {
+          "model": "qwen3:1.7b",
+          "n_tasks": 30,
+          "group_size": 4,
+          "signal_rate": 0.1,
+          "signal_rate_ci95": 0.1074,
+          "dead_too_easy": 26,
+          "dead_too_hard": 1,
+          "mean_spread": 0.433
+        },
+        "pass_rate": 0.9417,
+        "mean_reward": 0.9417
+      },
+      {
+        "model": "qwen3:4b",
+        "signal": {
+          "model": "qwen3:4b",
+          "n_tasks": 12,
+          "group_size": 4,
+          "signal_rate": 0.0,
+          "signal_rate_ci95": 0.0,
+          "dead_too_easy": 12,
+          "dead_too_hard": 0,
+          "mean_spread": 0.0
+        },
+        "pass_rate": 1.0,
+        "mean_reward": 1.0
+      },
+      {
+        "model": "qwen3:8b",
+        "signal": {
+          "model": "qwen3:8b",
+          "n_tasks": 30,
+          "group_size": 4,
+          "signal_rate": 0.0,
+          "signal_rate_ci95": 0.0,
+          "dead_too_easy": 30,
+          "dead_too_hard": 0,
+          "mean_spread": 0.0
+        },
+        "pass_rate": 1.0,
+        "mean_reward": 1.0
+      },
+      {
+        "model": "qwen3:14b",
+        "signal": {
+          "model": "qwen3:14b",
+          "n_tasks": 30,
+          "group_size": 4,
+          "signal_rate": 0.0,
+          "signal_rate_ci95": 0.0,
+          "dead_too_easy": 30,
+          "dead_too_hard": 0,
+          "mean_spread": 0.0
+        },
+        "pass_rate": 1.0,
+        "mean_reward": 1.0
+      }
+    ],
+    "floor": "qwen3:0.6b",
+    "ceiling": "qwen3:1.7b",
+    "best_signal_model": "qwen3:0.6b",
+    "slope": 0.2667,
+    "saturated": true,
+    "possibly_broken": false
+  },
+  "shape": {
+    "overall": {
+      "model": null,
+      "n_rollouts": 518,
+      "distinct_values": 2,
+      "effective_bins": 1.35,
+      "effectively_binary": true,
+      "frac_at_extremes": 1.0,
+      "histogram": {
+        "0": 46,
+        "1": 472
+      }
+    },
+    "qwen3:0.6b": {
+      "model": "qwen3:0.6b",
+      "n_rollouts": 120,
+      "distinct_values": 2,
+      "effective_bins": 1.88,
+      "effectively_binary": true,
+      "frac_at_extremes": 1.0,
+      "histogram": {
+        "0": 39,
+        "1": 81
+      }
+    },
+    "qwen3:1.7b": {
+      "model": "qwen3:1.7b",
+      "n_rollouts": 120,
+      "distinct_values": 2,
+      "effective_bins": 1.25,
+      "effectively_binary": true,
+      "frac_at_extremes": 1.0,
+      "histogram": {
+        "0": 7,
+        "1": 113
+      }
+    },
+    "qwen3:4b": {
+      "model": "qwen3:4b",
+      "n_rollouts": 39,
+      "distinct_values": 1,
+      "effective_bins": 1.0,
+      "effectively_binary": true,
+      "frac_at_extremes": 1.0,
+      "histogram": {
+        "1": 39
+      }
+    },
+    "qwen3:8b": {
+      "model": "qwen3:8b",
+      "n_rollouts": 120,
+      "distinct_values": 1,
+      "effective_bins": 1.0,
+      "effectively_binary": true,
+      "frac_at_extremes": 1.0,
+      "histogram": {
+        "1": 120
+      }
+    },
+    "qwen3:14b": {
+      "model": "qwen3:14b",
+      "n_rollouts": 119,
+      "distinct_values": 1,
+      "effective_bins": 1.0,
+      "effectively_binary": true,
+      "frac_at_extremes": 1.0,
+      "histogram": {
+        "1": 119
+      }
+    }
+  }
+}

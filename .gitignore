@@ -19,8 +19,9 @@ wheels/
 .idea/
 .vscode/
 
-# Churro data — regeneratable, kept out of git
-data/
+# Churro data: rollouts are cached locally; only fingerprints (report cards) are committed
+data/*
+!data/fingerprints/
 outputs/
 
 # Claude Code local state (per-machine, not project config)
