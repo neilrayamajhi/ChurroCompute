@@ -48,7 +48,7 @@ def check_environment(env: vf.Environment, max_rows: int = 5) -> GraderReport:
     rows = [dataset[i] for i in range(min(max_rows, len(dataset)))]
     checks = []
     for row in rows:
-        forms = _reference_forms(str(row.get("answer", "")), _answer_tags(env))
+        forms = reference_forms(env, str(row.get("answer", "")))
         reference = max(score_text(env, row, text) for text in forms)
         reference_as_dict = max(score_text(env, row, text, as_dict=True) for text in forms)
         wrong = score_text(env, row, WRONG_ANSWER)
@@ -65,8 +65,9 @@ def _answer_tags(env: vf.Environment) -> set[str]:
     }
 
 
-def _reference_forms(answer: str, tags: set[str]) -> list[str]:
-    tagged = [f"<{tag}>{answer}</{tag}>" for tag in sorted(tags)]
+def reference_forms(env: vf.Environment, answer: str) -> list[str]:
+    """The reference answer in each format the env's parser might expect."""
+    tagged = [f"<{tag}>{answer}</{tag}>" for tag in sorted(_answer_tags(env))]
     return [answer, f"\\boxed{{{answer}}}", *tagged]
 
 
