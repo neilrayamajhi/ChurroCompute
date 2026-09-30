@@ -2,6 +2,10 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
+# Same rule as difficulty._is_saturated: most of the top rung's tasks are
+# solved on every attempt.
+_SATURATION_FRACTION = 0.8
+
 
 @dataclass(frozen=True, slots=True)
 class LeaderboardRow:
@@ -34,6 +38,15 @@ def summarize(fingerprint: dict, min_tasks: int = 10) -> LeaderboardRow:
         best_signal_ci95=best["signal"]["signal_rate_ci95"] if best else None,
         pass_range=(min(passes), max(passes)) if passes else None,
         rungs_measured=len(measured),
-        saturated=fingerprint["difficulty"]["saturated"],
+        saturated=_top_rung_saturated(measured),
         binary_reward=fingerprint["shape"]["overall"]["effectively_binary"],
     )
+
+
+def _top_rung_saturated(measured: list[dict]) -> bool:
+    # Judged on the largest rung with enough tasks, not whichever rung is
+    # last: a 14b rung cut off after one easy task isn't saturation.
+    if not measured:
+        return False
+    top = measured[-1]["signal"]
+    return top["dead_too_easy"] / top["n_tasks"] > _SATURATION_FRACTION

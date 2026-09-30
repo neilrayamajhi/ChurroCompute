@@ -5,11 +5,18 @@ from churro.leaderboard import LeaderboardRow, summarize
 MIN_TASKS = 10
 
 
-def _rung(model: str, tasks: int, signal: float, ci: float, pass_rate: float) -> dict[str, object]:
+def _rung(
+    model: str, tasks: int, signal: float, ci: float, pass_rate: float, easy: int = 0
+) -> dict[str, object]:
     return {
         "model": model,
         "pass_rate": pass_rate,
-        "signal": {"n_tasks": tasks, "signal_rate": signal, "signal_rate_ci95": ci},
+        "signal": {
+            "n_tasks": tasks,
+            "signal_rate": signal,
+            "signal_rate_ci95": ci,
+            "dead_too_easy": easy,
+        },
     }
 
 
@@ -64,11 +71,23 @@ class TestSummarize:
 
         assert (row.best_model, row.best_signal, row.rungs_measured) == (None, None, 0)
 
-    def test_carries_saturation_and_binary_flags(self) -> None:
-        fp = _fingerprint([_rung("qwen3:0.6b", 30, 0.3, 0.1, 0.9)])
+    def test_saturated_when_top_measured_rung_is_mostly_too_easy(self) -> None:
+        fp = _fingerprint(
+            [_rung("qwen3:0.6b", 30, 0.3, 0.1, 0.5), _rung("qwen3:14b", 30, 0.1, 0.1, 1.0, easy=27)]
+        )
+
+        assert summarize(fp, min_tasks=MIN_TASKS).saturated is True
+
+    def test_saturation_ignores_a_top_rung_with_too_few_tasks(self) -> None:
+        fp = _fingerprint(
+            [_rung("qwen3:8b", 30, 0.7, 0.16, 0.48, easy=3), _rung("qwen3:14b", 1, 0.0, 0.0, 1.0, easy=1)]
+        )
         fp["difficulty"]["saturated"] = True  # type: ignore[index]
+
+        assert summarize(fp, min_tasks=MIN_TASKS).saturated is False
+
+    def test_carries_the_binary_reward_flag(self) -> None:
+        fp = _fingerprint([_rung("qwen3:0.6b", 30, 0.3, 0.1, 0.9)])
         fp["shape"]["overall"]["effectively_binary"] = True  # type: ignore[index]
 
-        row = summarize(fp, min_tasks=MIN_TASKS)
-
-        assert (row.saturated, row.binary_reward) == (True, True)
+        assert summarize(fp, min_tasks=MIN_TASKS).binary_reward is True
