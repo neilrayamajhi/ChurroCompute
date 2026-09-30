@@ -12,6 +12,7 @@ only rungs with at least 10 tasks. Details and caveats per env are in
 | reverse-text | ok | qwen3:0.6b | 96% ± 7% | 0%–97% | 2/5 | no | no |
 | mbti | ok | qwen3:0.6b | 93% ± 9% | 95%–100% | 4/5 | no | no |
 | OpenMed_MedMCQA | ok | qwen3:0.6b | 93% ± 9% | 42%–72% | 4/5 | no | no |
+| OpenMed_ICD10 | ok | qwen3:0.6b | 90% ± 11% | 12%–23% | 4/5 | no | no |
 | fingpt-sentiment | ok | qwen3:0.6b | 87% ± 12% | 0%–27% | 4/5 | no | yes |
 | OpenMed_HealthFact | ok | qwen3:0.6b | 83% ± 13% | 25%–37% | 5/5 | no | no |
 | OpenMed_BioASQ | ok | qwen3:0.6b | 80% ± 14% | 26%–63% | 4/5 | no | no |
