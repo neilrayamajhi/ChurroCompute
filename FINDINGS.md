@@ -11,6 +11,26 @@ Format for each entry:
 
 ---
 
+## 2026-09-29 — Batch 3: mbti, OpenMed_BioASQ, OpenMed_HealthFact, extract-zero
+
+Same setup as batch 2 (RunPod A40, `-n 30 -r 4`, 3.5h budget, grader pre-flight). Cost ≈ $3.90 for all four.
+
+| Env | 0.6b pass / signal | 1.7b | 4b | 8b | 14b | Read-out |
+|---|---|---|---|---|---|---|
+| mbti (0.1.0) | 95% / 93% | 100% / 57% | 70% / 100% (3 tasks) | 100% / 47% | 100% / 33% | Nearly everything passes, but graded partial credit keeps signal high for small models; it falls with size |
+| OpenMed_BioASQ (0.1.3) | 26% / 80% | 44% / 47% | 68% / 71% (7) | 54% / 47% | 63% / 77% | Useful at every rung, like MedMCQA |
+| OpenMed_HealthFact (0.2.1) | 25% / 83% | 28% / 33% | 34% / 64% (14) | 32% / 77% | 37% / 73% | Hard at every rung (14b: 37%), high signal at most |
+| extract-zero (0.1.1) | 36% / 40% | 36% / 30% | 100% / 0% (4) | 39% / 17% | 38% / 20% | Flat: model size doesn't help. Each rung splits tasks into always-right and always-wrong. Narrowness check 0%, so the grader isn't the cause |
+
+**Medical envs are the strongest training material so far.** MedMCQA, BioASQ and HealthFact are the only envs where 14b still has plenty to learn (63–72% pass, 73–87% signal).
+
+**Pipeline notes**
+- **Hugging Face rate limits.** extract-zero's first attempt failed setup: loading the env downloads its dataset from Hugging Face, which returned `429 Too Many Requests` to the anonymous, shared RunPod IP. Setup now retries after 2 and 5 minutes. The retry run went through (~$0.02 lost on the failed attempt).
+- **`best_signal_model` can be picked from a tiny rung.** mbti's card names qwen3:4b as the best model to train, from a 3-task rung scoring 100% ± 0%. `difficulty.py` doesn't weigh rung size. Suggested fix: ignore rungs under ~10 tasks when choosing it. Not changed, since it's the original metric's behaviour.
+- **qwen3:4b is the chronic bottleneck.** It hit the 45-min per-rung cap on every env this batch (3–14 tasks). A dedicated 4b budget, or dropping its thinking length, would fill that hole.
+
+---
+
 ## 2026-09-29 — Batch 2: MedMCQA, fingpt-sentiment, ascii-tree, legalbench (and metric 6 catches fingpt)
 
 **What we ran**
