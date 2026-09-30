@@ -16,6 +16,7 @@ only rungs with at least 10 tasks. Details and caveats per env are in
 | fingpt-sentiment | ok | qwen3:0.6b | 87% ± 12% | 0%–27% | 4/5 | no | yes |
 | OpenMed_HealthFact | ok | qwen3:0.6b | 83% ± 13% | 25%–37% | 5/5 | no | no |
 | OpenMed_BioASQ | ok | qwen3:0.6b | 80% ± 14% | 26%–63% | 4/5 | no | no |
+| OpenMed_DDI | ok | qwen3:1.7b | 63% ± 17% | 38%–68% | 5/5 | no | no |
 | iso8601-recurrence | not run | qwen3:1.7b | 43% ± 18% | 8%–91% | 3/5 | no | yes |
 | extract-zero | ok | qwen3:0.6b | 40% ± 18% | 36%–39% | 4/5 | no | no |
 | gsm8k | ok | qwen3:0.6b | 37% ± 17% | 68%–100% | 5/5 | yes | yes |
