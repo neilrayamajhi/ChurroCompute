@@ -1,0 +1,177 @@
+{
+  "env_id": "OpenMed_DDXPlus",
+  "churro_version": "0.1.0",
+  "ladder_version": "qwen3-v1",
+  "env_version": "0.1.6",
+  "generated_at": "2026-09-30T23:53:44.359089+00:00",
+  "group_size": 4,
+  "n_rollouts": 372,
+  "grader_check": "ok",
+  "difficulty": {
+    "env_id": "OpenMed_DDXPlus",
+    "ladder_version": "qwen3-v1",
+    "rungs": [
+      {
+        "model": "qwen3:0.6b",
+        "signal": {
+          "model": "qwen3:0.6b",
+          "n_tasks": 30,
+          "group_size": 4,
+          "signal_rate": 0.5,
+          "signal_rate_ci95": 0.1789,
+          "dead_too_easy": 1,
+          "dead_too_hard": 14,
+          "mean_spread": 0.3477
+        },
+        "pass_rate": 0.25,
+        "mean_reward": 0.2938
+      },
+      {
+        "model": "qwen3:1.7b",
+        "signal": {
+          "model": "qwen3:1.7b",
+          "n_tasks": 30,
+          "group_size": 4,
+          "signal_rate": 0.5333,
+          "signal_rate_ci95": 0.1785,
+          "dead_too_easy": 2,
+          "dead_too_hard": 12,
+          "mean_spread": 0.3565
+        },
+        "pass_rate": 0.325,
+        "mean_reward": 0.355
+      },
+      {
+        "model": "qwen3:4b",
+        "signal": {
+          "model": "qwen3:4b",
+          "n_tasks": 6,
+          "group_size": 1,
+          "signal_rate": 0.0,
+          "signal_rate_ci95": 0.0,
+          "dead_too_easy": 2,
+          "dead_too_hard": 4,
+          "mean_spread": 0.0
+        },
+        "pass_rate": 0.5,
+        "mean_reward": 0.495
+      },
+      {
+        "model": "qwen3:8b",
+        "signal": {
+          "model": "qwen3:8b",
+          "n_tasks": 30,
+          "group_size": 4,
+          "signal_rate": 0.7,
+          "signal_rate_ci95": 0.164,
+          "dead_too_easy": 3,
+          "dead_too_hard": 6,
+          "mean_spread": 0.144
+        },
+        "pass_rate": 0.475,
+        "mean_reward": 0.4626
+      },
+      {
+        "model": "qwen3:14b",
+        "signal": {
+          "model": "qwen3:14b",
+          "n_tasks": 1,
+          "group_size": 4,
+          "signal_rate": 0.0,
+          "signal_rate_ci95": 0.0,
+          "dead_too_easy": 1,
+          "dead_too_hard": 0,
+          "mean_spread": 0.0
+        },
+        "pass_rate": 1.0,
+        "mean_reward": 0.85
+      }
+    ],
+    "floor": "qwen3:0.6b",
+    "ceiling": "qwen3:8b",
+    "best_signal_model": "qwen3:8b",
+    "slope": 0.075,
+    "saturated": true,
+    "possibly_broken": false
+  },
+  "shape": {
+    "overall": {
+      "model": null,
+      "n_rollouts": 372,
+      "distinct_values": 5,
+      "effective_bins": 2.68,
+      "effectively_binary": false,
+      "frac_at_extremes": 0.0027,
+      "histogram": {
+        "0": 1,
+        "0.05": 15,
+        "0.095": 222,
+        "0.85": 23,
+        "0.895": 111
+      }
+    },
+    "qwen3:0.6b": {
+      "model": "qwen3:0.6b",
+      "n_rollouts": 120,
+      "distinct_values": 4,
+      "effective_bins": 1.92,
+      "effectively_binary": true,
+      "frac_at_extremes": 0.0083,
+      "histogram": {
+        "0": 1,
+        "0.05": 1,
+        "0.095": 88,
+        "0.895": 30
+      }
+    },
+    "qwen3:1.7b": {
+      "model": "qwen3:1.7b",
+      "n_rollouts": 120,
+      "distinct_values": 2,
+      "effective_bins": 1.88,
+      "effectively_binary": true,
+      "frac_at_extremes": 0.0,
+      "histogram": {
+        "0.095": 81,
+        "0.895": 39
+      }
+    },
+    "qwen3:4b": {
+      "model": "qwen3:4b",
+      "n_rollouts": 8,
+      "distinct_values": 2,
+      "effective_bins": 2.0,
+      "effectively_binary": true,
+      "frac_at_extremes": 0.0,
+      "histogram": {
+        "0.095": 4,
+        "0.895": 4
+      }
+    },
+    "qwen3:8b": {
+      "model": "qwen3:8b",
+      "n_rollouts": 120,
+      "distinct_values": 4,
+      "effective_bins": 3.57,
+      "effectively_binary": false,
+      "frac_at_extremes": 0.0,
+      "histogram": {
+        "0.05": 14,
+        "0.095": 49,
+        "0.85": 19,
+        "0.895": 38
+      }
+    },
+    "qwen3:14b": {
+      "model": "qwen3:14b",
+      "n_rollouts": 4,
+      "distinct_values": 1,
+      "effective_bins": 1.0,
+      "effectively_binary": true,
+      "frac_at_extremes": 0.0,
+      "histogram": {
+        "0.85": 4
+      }
+    }
+  }
+}
